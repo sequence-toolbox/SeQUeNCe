@@ -2,7 +2,7 @@ from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.entanglement_management.purification import BBPSSWProtocol
+from sequence.entanglement_management.purification import PurificationProtocol
 from sequence.message import Message
 
 
@@ -24,7 +24,7 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [BBPSSWProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [PurificationProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
 class PurifyNode(Node):

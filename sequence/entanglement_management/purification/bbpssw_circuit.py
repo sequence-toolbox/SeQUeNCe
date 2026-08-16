@@ -17,11 +17,11 @@ if TYPE_CHECKING:
 from ...utils import log, metrics
 from ...utils.metrics.event_types import EventTypes
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
-from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
+from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register(KET_VECTOR_FORMALISM)
-@BBPSSWProtocol.register(DENSITY_MATRIX_FORMALISM)
-class BBPSSWCircuit(BBPSSWProtocol):
+@PurificationProtocol.register(KET_VECTOR_FORMALISM)
+@PurificationProtocol.register(DENSITY_MATRIX_FORMALISM)
+class BBPSSWCircuit(PurificationProtocol):
     """Purification protocol instance.
 
     This class provides an implementation of the BBPSSW purification protocol.
@@ -55,6 +55,7 @@ class BBPSSWCircuit(BBPSSWProtocol):
             meas_memo (Memory): Memory to measure and discard.
         """
         super().__init__(owner, name, kept_memo, meas_memo)
+        self.protocol_type = 'bbpssw'
 
     def start(self) -> None:
         """Method to start entanglement purification.

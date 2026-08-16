@@ -3,7 +3,7 @@ from sequence.topology.node import BSMNode, Node
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.entanglement_management.generation import EntanglementGenerationA
-from sequence.entanglement_management.purification import BBPSSWProtocol
+from sequence.entanglement_management.purification import PurificationProtocol
 from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 from sequence.resource_management.resource_manager import ResourceManager
 from sequence.resource_management.rule_manager import Rule
@@ -162,7 +162,7 @@ def ep_req_func(protocols, args):
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, BBPSSWProtocol):
+        if not isinstance(protocol, PurificationProtocol):
             continue
 
         if protocol.kept_memo.name == remote1:
@@ -187,7 +187,7 @@ def ep_req_func(protocols, args):
 def ep_rule_action1(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
+    protocol = PurificationProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_req_func]
     req_args = {"remote1": memories_info[0].remote_memo,
@@ -209,7 +209,7 @@ def ep_rule_condition2(memory_info: "MemoryInfo", manager: "MemoryManager", args
 def ep_rule_action2(memories_info: list["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % (memories[0].name)
-    protocol = BBPSSWProtocol.create(None, name, memories[0], None)
+    protocol = PurificationProtocol.create(None, name, memories[0], None)
     return [protocol, [None], [None], [None]]
 
 

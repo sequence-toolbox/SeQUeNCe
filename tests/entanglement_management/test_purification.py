@@ -19,7 +19,7 @@ from sequence.entanglement_management.purification import (
     BBPSSWCircuit,
     BBPSSWMessage,
     BBPSSWMsgType,
-    BBPSSWProtocol,
+    PurificationProtocol,
     DEJMPS_BDS_PROTOCOL,
 )
 from sequence.kernel.quantum_manager import QuantumManager
@@ -80,12 +80,12 @@ def test_BBPSSWMessage():
         BBPSSWMessage("unknown type")
 
 
-def test_BBPSSW_registered_formalisms_and_factory_selection():
-    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+def test_PurificationProtocol_registered_formalisms_and_factory_selection():
+    old_protocol_formalism = PurificationProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
 
     try:
-        registered_formalisms = set(BBPSSWProtocol.list_protocols())
+        registered_formalisms = set(PurificationProtocol.list_protocols())
 
         assert {
             KET_VECTOR_FORMALISM,
@@ -95,40 +95,41 @@ def test_BBPSSW_registered_formalisms_and_factory_selection():
 
         for formalism in [KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM]:
             QuantumManager.set_global_manager_formalism(formalism)
-            BBPSSWProtocol.set_formalism(formalism)
+            PurificationProtocol.set_formalism(formalism)
             tl = Timeline()
             node = FakeNode("a1", tl)
             kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
             measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
-            protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+            protocol = PurificationProtocol.create(node, "a1.ep1", kept, measured)
 
             assert isinstance(protocol, BBPSSWCircuit)
+            assert protocol.protocol_type == "bbpssw"
 
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
-        BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        PurificationProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
         tl = Timeline()
         node = FakeNode("a1", tl)
         kept = Memory("kept", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
         measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=1, wavelength=HALF_MICRON)
 
-        protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+        protocol = PurificationProtocol.create(node, "a1.ep1", kept, measured)
 
         assert isinstance(protocol, BBPSSW_BDS)
     finally:
-        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
 def test_DEJMPS_BDS_registered_as_explicit_protocol_selector():
-    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_protocol_formalism = PurificationProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
 
     try:
-        assert DEJMPS_BDS_PROTOCOL in set(BBPSSWProtocol.list_protocols())
+        assert DEJMPS_BDS_PROTOCOL in set(PurificationProtocol.list_protocols())
 
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
-        BBPSSWProtocol.set_formalism(DEJMPS_BDS_PROTOCOL)
+        PurificationProtocol.set_formalism(DEJMPS_BDS_PROTOCOL)
 
         tl = Timeline()
         node = FakeNode("a1", tl)
@@ -137,18 +138,19 @@ def test_DEJMPS_BDS_registered_as_explicit_protocol_selector():
         measured = Memory("measured", tl, fidelity=1, frequency=0, efficiency=1,
                           coherence_time=1, wavelength=HALF_MICRON)
 
-        protocol = BBPSSWProtocol.create(node, "a1.ep1", kept, measured)
+        protocol = PurificationProtocol.create(node, "a1.ep1", kept, measured)
 
         assert isinstance(protocol, DEJMPS_BDS)
-        assert protocol.is_twirled is False
+        assert not isinstance(protocol, BBPSSW_BDS)
+        assert not hasattr(protocol, "is_twirled")
         assert protocol.protocol_type == DEJMPS_BDS_PROTOCOL
     finally:
-        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
 def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
-    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_protocol_formalism = PurificationProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
     input_fidelity = 0.7
     expected_success_probability = success_probability(input_fidelity)
@@ -158,7 +160,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
 
     try:
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
-        BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        PurificationProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
 
         tl = Timeline()
         a1 = FakeNode("a1", tl)
@@ -187,7 +189,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
         meas1.entangled_memory = {"node_id": "a2", "memo_id": "meas2"}
         meas2.entangled_memory = {"node_id": "a1", "memo_id": "meas1"}
 
-        protocol = BBPSSWProtocol.create(a1, "a1.ep1", kept1, meas1)
+        protocol = PurificationProtocol.create(a1, "a1.ep1", kept1, meas1)
         protocol.set_others("a2.ep2", "a2", [kept2.name, meas2.name])
 
         p_success, purified_bds = protocol.purification_res()
@@ -198,7 +200,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
         assert purified_bds[0] > input_fidelity
         assert sum(purified_bds) == pytest.approx(1)
     finally:
-        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
@@ -236,12 +238,12 @@ def bds_protocol_result(
     own_meas_fid=1,
     remote_meas_fid=1,
 ):
-    old_protocol_formalism = BBPSSWProtocol.get_formalism()
+    old_protocol_formalism = PurificationProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
 
     try:
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
-        BBPSSWProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
+        PurificationProtocol.set_formalism(BELL_DIAGONAL_STATE_FORMALISM)
 
         tl = Timeline()
         a1 = FakeNode("a1", tl)
@@ -273,7 +275,7 @@ def bds_protocol_result(
 
         return protocol, protocol.purification_res()
     finally:
-        BBPSSWProtocol.set_formalism(old_protocol_formalism)
+        PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
@@ -296,8 +298,6 @@ def test_BBPSSW_BDS_twirls_non_werner_bds_input():
     protocol, (p_success, purified_bds) = bds_protocol_result(
         BBPSSW_BDS, kept_state, meas_state, input_fidelity
     )
-
-    assert protocol.is_twirled is True
     assert p_success == pytest.approx(expected_success_probability)
     assert purified_bds == pytest.approx(expected_bds)
 
@@ -311,9 +311,13 @@ def test_DEJMPS_BDS_matches_dejmps_recurrence_for_bell_diagonal_states():
         DEJMPS_BDS, kept_state, meas_state, input_fidelity=kept_state[0]
     )
 
-    assert isinstance(protocol, BBPSSW_BDS)
-    assert protocol.is_twirled is False
-    assert protocol.protocol_type == 'dejmps_bds'
+    assert isinstance(protocol, DEJMPS_BDS)
+    assert not isinstance(protocol, BBPSSW_BDS)
+    assert not hasattr(protocol, "is_twirled")
+    assert protocol.protocol_type == DEJMPS_BDS_PROTOCOL
+    assert isinstance(protocol, DEJMPS_BDS)
+    assert not isinstance(protocol, BBPSSW_BDS)
+    assert not hasattr(protocol, "is_twirled")
     assert p_success == pytest.approx(expected_success_probability)
     assert purified_bds == pytest.approx(expected_bds)
     assert np.sum(purified_bds) == pytest.approx(1)
@@ -375,8 +379,6 @@ def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
             input_fidelity=kept_state[0],
         )
 
-    assert protocol.is_twirled is False
-
     if expected_output_index is None:
         assert p_success == pytest.approx(0)
         return
@@ -431,8 +433,6 @@ def test_DEJMPS_BDS_one_sided_measurement_flip_accepts_rejected_branch(
         own_meas_fid=own_meas_fid,
         remote_meas_fid=remote_meas_fid,
     )
-
-    assert protocol.is_twirled is False
     assert p_success == pytest.approx(1)
     assert purified_bds == pytest.approx(PURE_BDS_STATES[expected_output_index])
 
@@ -456,13 +456,11 @@ def test_DEJMPS_BDS_complete_gate_failure_returns_maximally_mixed_state(
         own_gate_fid=own_gate_fid,
         remote_gate_fid=remote_gate_fid,
     )
-
-    assert protocol.is_twirled is False
     assert p_success == pytest.approx(0.5)
     assert purified_bds == pytest.approx(np.full(4, 0.25))
 
 
-def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, BBPSSWProtocol, BBPSSWProtocol]:
+def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline, Memory, Memory, Memory, Memory, PurificationProtocol, PurificationProtocol]:
     """create the whole quantum network (timeline, nodes, channels, memory, protocols)
     """
     tl = Timeline()
@@ -494,8 +492,8 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     meas2.entangled_memory = {'node_id': 'a1', 'memo_id': 'meas1'}
     kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = fidelity
 
-    ep1 = BBPSSWProtocol.create(a1, "a1.ep1", kept1, meas1)
-    ep2 = BBPSSWProtocol.create(a2, "a2.ep2", kept2, meas2)
+    ep1 = PurificationProtocol.create(a1, "a1.ep1", kept1, meas1)
+    ep2 = PurificationProtocol.create(a2, "a2.ep2", kept2, meas2)
     a1.protocols.append(ep1)
     a2.protocols.append(ep2)
     ep1.set_others(ep2.name, a2.name, [kept2.name, meas2.name])

@@ -50,7 +50,7 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 from ..components.memory import Memory
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..entanglement_management.generation import EntanglementGenerationA
-from ..entanglement_management.purification import BBPSSWProtocol
+from ..entanglement_management.purification import PurificationProtocol
 from ..entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
 
 if TYPE_CHECKING:
@@ -172,7 +172,7 @@ def ep_rule_action_request(memories_info: list[MemoryInfo], _args: Arguments) ->
     """
     memories = [info.memory for info in memories_info]
     name = f"EP.{memories[0].name}.{memories[1].name}"
-    protocol = BBPSSWProtocol.create(TempNode, name, memories[0], memories[1])
+    protocol = PurificationProtocol.create(TempNode, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs: list[RequestFunction | None] = [ep_match_func]
     req_args = [{"remote_kept": memories_info[0].remote_memo, "remote_meas": memories_info[1].remote_memo}]
@@ -195,7 +195,7 @@ def ep_rule_action_await(memories_info: list[MemoryInfo], _args: Arguments) -> A
     """
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % memories[0].name
-    protocol = BBPSSWProtocol.create(TempNode, name, memories[0], TempMemory)
+    protocol = PurificationProtocol.create(TempNode, name, memories[0], TempMemory)
     return protocol, [None], [None], [None]
 
 
@@ -279,7 +279,7 @@ def ep_rule_condition_await(memory_info: MemoryInfo, _manager: MemoryManager, ar
     return []
 
 
-def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBPSSWProtocol | None:
+def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> PurificationProtocol | None:
     """Function used by `ep_rule_action_request` for selecting purification protocols on the remote node.
 
     Note that only one memory will be assigned to each protocol instance within the `ep_rule_action_await` function;
@@ -293,14 +293,14 @@ def ep_match_func(protocols: list[EntanglementProtocol], args: Arguments) -> BBP
             (the measured memory on the remote node).
 
     Returns:
-        BBPSSWProtocol | None: the protocol to pair on the other node (or None if no protocol is selected).
+        PurificationProtocol | None: the protocol to pair on the other node (or None if no protocol is selected).
     """
     remote_kept = args["remote_kept"]
     remote_meas = args["remote_meas"]
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, BBPSSWProtocol):
+        if not isinstance(protocol, PurificationProtocol):
             continue
 
         if protocol.kept_memo.name == remote_kept:

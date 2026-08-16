@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log, metrics
 from ...utils.metrics.event_types import EventTypes
-from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
+from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
-class BBPSSW_BDS(BBPSSWProtocol):
+@PurificationProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
+class BBPSSW_BDS(PurificationProtocol):
     """Purification protocol instance.
 
     This class provides an implementation of the BBPSSW purification protocol.
@@ -37,10 +37,9 @@ class BBPSSW_BDS(BBPSSWProtocol):
         remote_node_name (str): name of other node.
         remote_protocol_name (str): name of other protocol.
         remote_memories (list[str]): name of remote memories.
-        is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 
-    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, is_twirled=True):
+    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory):
         """Constructor for purification protocol.
 
         args:
@@ -48,11 +47,9 @@ class BBPSSW_BDS(BBPSSWProtocol):
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
             meas_memo (Memory): Memory to measure and discard.
-            is_twirled (bool): Whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
         """
         super().__init__(owner, name, kept_memo, meas_memo)
 
-        self.is_twirled = is_twirled
         self.ep_matched = False
         self.protocol_type = 'bbpssw_bds'
 
@@ -175,28 +172,10 @@ class BBPSSW_BDS(BBPSSWProtocol):
         # gate and measurement fidelities on remote node
         remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
 
-        if self.is_twirled:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state[0], (1 - kept_input_state.state[
-                0]) / 3, (1 - kept_input_state.state[0]) / 3, (1 - kept_input_state.state[
-                0]) / 3  # Diagonal elements of kept pair (twirled)
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state[0], (1 - meas_input_state.state[
-                0]) / 3, (1 - meas_input_state.state[0]) / 3, (1 - meas_input_state.state[
-                0]) / 3  # Diagonal elements of measured pair (twirled)
-        else:
-            # SeQUeNCe BDS order is [Phi+, Phi-, Psi+, Psi-].
-            # DEJMPS formulas use paper order [Phi+, Psi-, Psi+, Phi-].
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = (
-                kept_input_state.state[0],
-                kept_input_state.state[3],
-                kept_input_state.state[2],
-                kept_input_state.state[1],
-            )
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = (
-                meas_input_state.state[0],
-                meas_input_state.state[3],
-                meas_input_state.state[2],
-                meas_input_state.state[1],
-            )
+        kept_elem_1 = kept_input_state.state[0]
+        kept_elem_2 = kept_elem_3 = kept_elem_4 = (1 - kept_elem_1) / 3
+        meas_elem_1 = meas_input_state.state[0]
+        meas_elem_2 = meas_elem_3 = meas_elem_4 = (1 - meas_elem_1) / 3
 
         # assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
         a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
@@ -243,16 +222,13 @@ class BBPSSW_BDS(BBPSSWProtocol):
                                 kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) \
                      + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
 
-        if self.is_twirled:
-            new_fid = new_elem_1 / p_succ  # normalization by success probability
-            bds_elems = np.array([new_fid, (1 - new_fid) / 3, (1 - new_fid) / 3, (1 - new_fid) / 3])
-        else:
-            # Inputs were converted from SeQUeNCe order [Phi+, Phi-, Psi+, Psi-]
-            # to DEJMPS paper order [Phi+, Psi-, Psi+, Phi-] before applying the
-            # recurrence. The formulas below produce SeQUeNCe order
-            # [Phi+, Phi-, Psi+, Psi-] directly.
-            bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
-            bds_elems = bds_elems / p_succ  # normalization by success probability
+        new_fid = new_elem_1 / p_succ
+        bds_elems = np.array([
+            new_fid,
+            (1 - new_fid) / 3,
+            (1 - new_fid) / 3,
+            (1 - new_fid) / 3,
+        ])
 
         log.logger.debug(
             f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}")
