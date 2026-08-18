@@ -73,7 +73,6 @@ def main() -> None:
             node = qchannel.sender.name
             bsm = qchannel.receiver
             bsm_to_node[bsm].append(node)
-        qconnections = set()
         for bsm, nodes in bsm_to_node.items():
             assert len(nodes) == 2, f'{bsm} connects to {len(nodes)} number of nodes (should be 2)'
             g.edge(nodes[0], nodes[1], color='blue')
