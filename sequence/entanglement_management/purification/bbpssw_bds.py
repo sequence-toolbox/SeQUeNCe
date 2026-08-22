@@ -181,48 +181,16 @@ class BBPSSW_BDS(PurificationProtocol):
         a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
 
         # calculate success probability with analytical formula
-        p_succ = 1 / 2 \
-                 + own_node_gate_fid * remote_node_gate_fid \
-                 * (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 + own_node_gate_fid * remote_node_gate_fid * (a * b + (1 - a) * (1 - b)) \
-                 * (own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
-                    - own_node_meas_fid * (1 - remote_node_meas_fid) - (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 - own_node_gate_fid * remote_node_gate_fid / 2
+        p_succ = 1 / 2 + own_node_gate_fid * remote_node_gate_fid * (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
+            + own_node_gate_fid * remote_node_gate_fid * (a * b + (1 - a) * (1 - b)) * (own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid) \
+            - own_node_meas_fid * (1 - remote_node_meas_fid) - (1 - own_node_meas_fid) * remote_node_meas_fid) - own_node_gate_fid * remote_node_gate_fid / 2
 
-        # calculate the BDS elements
-        new_elem_1 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        # calculate the BDS element
+        new_elem_fid = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)) \
+            * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2) + (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
+            * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
 
-        new_elem_2 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        new_elem_3 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        new_elem_4 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        new_fid = new_elem_1 / p_succ
+        new_fid = new_elem_fid / p_succ
         bds_elems = np.array([
             new_fid,
             (1 - new_fid) / 3,

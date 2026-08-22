@@ -171,96 +171,35 @@ class DEJMPS_BDS(PurificationProtocol):
         a = kept_elem_1 + kept_elem_2
         b = meas_elem_1 + meas_elem_2
 
-        same_report = (
-            own_meas_fid * remote_meas_fid
-            + (1 - own_meas_fid) * (1 - remote_meas_fid)
-        )
-        opposite_report = (
-            own_meas_fid * (1 - remote_meas_fid)
-            + (1 - own_meas_fid) * remote_meas_fid
-        )
+        same_report = (own_meas_fid * remote_meas_fid + (1 - own_meas_fid) * (1 - remote_meas_fid))
+        opposite_report = (own_meas_fid * (1 - remote_meas_fid) + (1 - own_meas_fid) * remote_meas_fid)
         joint_gate_fid = own_gate_fid * remote_gate_fid
 
         p_succ = (
-            1 / 2
-            + joint_gate_fid * opposite_report
-            + joint_gate_fid
-            * (a * b + (1 - a) * (1 - b))
-            * (same_report - opposite_report)
-            - joint_gate_fid / 2
+            1 / 2 + joint_gate_fid * opposite_report + joint_gate_fid * (a * b + (1 - a) * (1 - b))
+            * (same_report - opposite_report) - joint_gate_fid / 2
         )
 
         new_elem_1 = (
-            joint_gate_fid
-            * (
-                same_report
-                * (
-                    kept_elem_1 * meas_elem_1
-                    + kept_elem_2 * meas_elem_2
-                )
-                + opposite_report
-                * (
-                    kept_elem_1 * meas_elem_3
-                    + kept_elem_2 * meas_elem_4
-                )
-            )
-            + (1 - joint_gate_fid) / 8
+            joint_gate_fid * (same_report * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
+            + opposite_report * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) + (1 - joint_gate_fid) / 8
         )
 
         new_elem_2 = (
-            joint_gate_fid
-            * (
-                same_report
-                * (
-                    kept_elem_1 * meas_elem_2
-                    + kept_elem_2 * meas_elem_1
-                )
-                + opposite_report
-                * (
-                    kept_elem_1 * meas_elem_4
-                    + kept_elem_2 * meas_elem_3
-                )
-            )
-            + (1 - joint_gate_fid) / 8
+            joint_gate_fid * (same_report * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
+            + opposite_report * (kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)) + (1 - joint_gate_fid) / 8
         )
 
         new_elem_3 = (
-            joint_gate_fid
-            * (
-                same_report
-                * (
-                    kept_elem_3 * meas_elem_3
-                    + kept_elem_4 * meas_elem_4
-                )
-                + opposite_report
-                * (
-                    kept_elem_3 * meas_elem_1
-                    + kept_elem_4 * meas_elem_2
-                )
-            )
-            + (1 - joint_gate_fid) / 8
+            joint_gate_fid * (same_report * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
+            + opposite_report * (kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)) + (1 - joint_gate_fid) / 8
         )
 
         new_elem_4 = (
-            joint_gate_fid
-            * (
-                same_report
-                * (
-                    kept_elem_3 * meas_elem_4
-                    + kept_elem_4 * meas_elem_3
-                )
-                + opposite_report
-                * (
-                    kept_elem_3 * meas_elem_2
-                    + kept_elem_4 * meas_elem_1
-                )
-            )
-            + (1 - joint_gate_fid) / 8
+            joint_gate_fid * (same_report * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
+            + opposite_report * (kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) + (1 - joint_gate_fid) / 8
         )
-
-        bds_elems = np.array(
-            [new_elem_1, new_elem_2, new_elem_3, new_elem_4]
-        )
+        bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
         bds_elems = bds_elems / p_succ
 
         log.logger.debug(
