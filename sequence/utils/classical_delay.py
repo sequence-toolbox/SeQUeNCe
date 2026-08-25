@@ -4,7 +4,7 @@ Classical delay utility functions.
 
 from networkx import Graph, single_source_dijkstra, exception
 from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import SPEED_OF_LIGHT, MILLISECOND
+from sequence.constants import SPEED_OF_LIGHT, MICROSECOND
 
 
 def classical_delay(distance: float, hop_count: int, classical_delay_node: float, classical_delay_hop: float) -> int:
@@ -13,13 +13,13 @@ def classical_delay(distance: float, hop_count: int, classical_delay_node: float
     Args:
         distance (float): the distance between source and destination in km
         hop_count (int): the number of hops/nodes between source and destination
-        classical_delay_node (float): delay at the destination node in milliseconds
-        classical_delay_hop (float): delay for each intermediate hop in milliseconds
+        classical_delay_node (float): delay at the destination node in microseconds
+        classical_delay_hop (float): delay for each intermediate hop in microseconds
     
     Returns:
         int: the delay in picoseconds
     """
-    return int(distance / SPEED_OF_LIGHT + (hop_count * classical_delay_hop + classical_delay_node) * MILLISECOND)
+    return int(distance / SPEED_OF_LIGHT + (hop_count * classical_delay_hop + classical_delay_node) * MICROSECOND)
 
 
 def update_cchannel_delay(topo: RouterNetTopo, classical_delay_node: float, classical_delay_hop: float) -> None:
@@ -27,8 +27,8 @@ def update_cchannel_delay(topo: RouterNetTopo, classical_delay_node: float, clas
 
     Args:
         topo (RouterNetTopo): the topology of the network
-        classical_delay_node (float): delay at the destination node in milliseconds
-        classical_delay_hop (float): delay for each intermediate hop in milliseconds
+        classical_delay_node (float): delay at the destination node in microseconds
+        classical_delay_hop (float): delay for each intermediate hop in microseconds
     """
     nodes = [node.name for node in topo.nodes[topo.QUANTUM_ROUTER]]
     graph = Graph()
