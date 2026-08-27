@@ -20,6 +20,7 @@ from ...utils import log, metrics
 from ...utils.metrics.event_types import EventTypes
 from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
 
+
 @PurificationProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
 class BBPSSW_BDS(PurificationProtocol):
     """Purification protocol instance.
@@ -108,7 +109,8 @@ class BBPSSW_BDS(PurificationProtocol):
             self.owner.timeline.quantum_manager.set(keys, new_bds)
 
         log.logger.debug(f'Starting BBPSSW from {self.owner} to {self.remote_node_name}')
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res, protocol_type=self.protocol_type)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, 
+                                meas_res=self.meas_res, protocol_type=self.protocol_type)
         self.owner.send_message(self.remote_node_name, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -135,12 +137,8 @@ class BBPSSW_BDS(PurificationProtocol):
                 remote_kept_memory.bds_decohere()
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
-                metrics.record(
-                    EventTypes.EP_SUCCESS,
-                    self.owner.name,
-                    remote_node=self.remote_node_name,
-                    fidelity=self.kept_memo.fidelity,
-                )
+                metrics.record(EventTypes.EP_SUCCESS, self.owner.name, 
+                               remote_node=self.remote_node_name, fidelity=self.kept_memo.fidelity)
                 self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
                 log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')

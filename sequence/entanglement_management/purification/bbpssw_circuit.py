@@ -19,6 +19,7 @@ from ...utils.metrics.event_types import EventTypes
 from ...constants import KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM
 from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
 
+
 @PurificationProtocol.register(KET_VECTOR_FORMALISM)
 @PurificationProtocol.register(DENSITY_MATRIX_FORMALISM)
 class BBPSSWCircuit(PurificationProtocol):
@@ -89,15 +90,11 @@ class BBPSSWCircuit(PurificationProtocol):
         super().start()
         meas_samp = self.owner.get_generator().random()
         self.meas_res = self.owner.timeline.quantum_manager.run_circuit(
-            self.circuit, [self.kept_memo.qstate_key,
-                           self.meas_memo.qstate_key],
-            meas_samp)
+            self.circuit, [self.kept_memo.qstate_key, self.meas_memo.qstate_key], meas_samp)
         self.meas_res = self.meas_res[self.meas_memo.qstate_key]
         dst = self.kept_memo.entangled_memory["node_id"]
 
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES,
-                                self.remote_protocol_name,
-                                meas_res=self.meas_res)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res)
         self.owner.send_message(dst, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -111,20 +108,14 @@ class BBPSSWCircuit(PurificationProtocol):
             Will call `update_resource_manager` method.
         """
 
-        log.logger.info(
-            self.owner.name + " received result message, succeeded: {}".format(
-                self.meas_res == msg.meas_res))
+        log.logger.info(self.owner.name + " received result message, succeeded: {}".format(self.meas_res == msg.meas_res))
         assert src == self.remote_node_name
 
         self.update_resource_manager(self.meas_memo, "RAW")
         if self.meas_res == msg.meas_res:
             self.kept_memo.fidelity = self.improved_fidelity(self.kept_memo.fidelity)
-            metrics.record(
-                EventTypes.EP_SUCCESS,
-                self.owner.name,
-                remote_node=self.remote_node_name,
-                fidelity=self.kept_memo.fidelity,
-            )
+            metrics.record(EventTypes.EP_SUCCESS, self.owner.name, 
+                           remote_node=self.remote_node_name, fidelity=self.kept_memo.fidelity)
             self.update_resource_manager(self.kept_memo, state="PURIFIED")
         else:
             metrics.record(EventTypes.EP_FAILURE, self.owner.name, remote_node=self.remote_node_name)

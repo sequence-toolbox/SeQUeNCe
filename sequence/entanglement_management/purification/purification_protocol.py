@@ -94,7 +94,8 @@ class PurificationProtocol(EntanglementProtocol, ABC):
         cls._global_formalism = formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: type['PurificationProtocol'] | None = None) -> Callable[[type['PurificationProtocol']], type['PurificationProtocol']] | None:
+    def register(cls, name: str, protocol_class: type['PurificationProtocol'] | None = None
+                 ) -> Callable[[type['PurificationProtocol']], type['PurificationProtocol']] | None:
         """Register a 2-to-1 purification protocol class. Can be used as a decorator or as a normal function.
 
         Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.

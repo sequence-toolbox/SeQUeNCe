@@ -1,11 +1,8 @@
 from .bbpssw_circuit import BBPSSWCircuit
 from .bbpssw_bds import BBPSSW_BDS
-from .dejmps_bds import DEJMPS_BDS, DEJMPS_BDS_PROTOCOL
-from .purification_protocol import (
-    PurificationProtocol,
-    BBPSSWMessage,
-    BBPSSWMsgType,
-)
+from .dejmps_bds import DEJMPS_BDS
+from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
+
 
 __all__ = [
     "PurificationProtocol",
@@ -13,7 +10,6 @@ __all__ = [
     "BBPSSWMsgType",
     "BBPSSW_BDS",
     "DEJMPS_BDS",
-    "DEJMPS_BDS_PROTOCOL",
     "BBPSSWCircuit",
 ]
 

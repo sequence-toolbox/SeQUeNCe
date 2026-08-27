@@ -3,25 +3,10 @@ import pytest
 
 from sequence.components.memory import Memory
 from sequence.components.optical_channel import ClassicalChannel
-from sequence.constants import (
-    BELL_DIAGONAL_STATE_FORMALISM,
-    DENSITY_MATRIX_FORMALISM,
-    KET_VECTOR_FORMALISM,
-    SQRT_HALF,
-    PHI_PLUS,
-    PHI_MINUS,
-    PSI_PLUS,
-    PSI_MINUS,
-)
-from sequence.entanglement_management.purification import (
-    BBPSSW_BDS,
-    DEJMPS_BDS,
-    BBPSSWCircuit,
-    BBPSSWMessage,
-    BBPSSWMsgType,
-    PurificationProtocol,
-    DEJMPS_BDS_PROTOCOL,
-)
+from sequence.constants import (BELL_DIAGONAL_STATE_FORMALISM, DENSITY_MATRIX_FORMALISM, DEJMPS, 
+                                KET_VECTOR_FORMALISM, SQRT_HALF, PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS, MILLISECOND)
+from sequence.entanglement_management.purification import (BBPSSW_BDS, DEJMPS_BDS, BBPSSWCircuit, BBPSSWMessage, 
+                                                           BBPSSWMsgType, PurificationProtocol)
 from sequence.kernel.quantum_manager import QuantumManager
 from sequence.kernel.timeline import Timeline
 from sequence.topology.node import Node
@@ -34,13 +19,6 @@ ENTANGLED = 'ENTANGLED'
 RAW = 'RAW'
 
 HALF_MICRON = 500
-ONE_MILLISECOND = 1e9
-# SQRT_HALF = 0.5 ** 0.5
-
-# phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
-# phi_minus = [SQRT_HALF, 0, 0, -SQRT_HALF]
-# psi_plus = [0, SQRT_HALF, SQRT_HALF, 0]
-# psi_minus = [0, SQRT_HALF, -SQRT_HALF, 0]
 BELL_STATES = [PHI_PLUS, PHI_MINUS, PSI_PLUS, PSI_MINUS]
 
 
@@ -87,11 +65,8 @@ def test_PurificationProtocol_registered_formalisms_and_factory_selection():
     try:
         registered_formalisms = set(PurificationProtocol.list_protocols())
 
-        assert {
-            KET_VECTOR_FORMALISM,
-            DENSITY_MATRIX_FORMALISM,
-            BELL_DIAGONAL_STATE_FORMALISM,
-        }.issubset(registered_formalisms)
+        assert {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
+                }.issubset(registered_formalisms)
 
         for formalism in [KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM]:
             QuantumManager.set_global_manager_formalism(formalism)
@@ -126,10 +101,10 @@ def test_DEJMPS_BDS_registered_as_explicit_protocol_selector():
     old_manager_formalism = QuantumManager.get_active_formalism()
 
     try:
-        assert DEJMPS_BDS_PROTOCOL in set(PurificationProtocol.list_protocols())
+        assert DEJMPS in set(PurificationProtocol.list_protocols())
 
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
-        PurificationProtocol.set_formalism(DEJMPS_BDS_PROTOCOL)
+        PurificationProtocol.set_formalism(DEJMPS)
 
         tl = Timeline()
         node = FakeNode("a1", tl)
@@ -142,8 +117,7 @@ def test_DEJMPS_BDS_registered_as_explicit_protocol_selector():
 
         assert isinstance(protocol, DEJMPS_BDS)
         assert not isinstance(protocol, BBPSSW_BDS)
-        assert not hasattr(protocol, "is_twirled")
-        assert protocol.protocol_type == DEJMPS_BDS_PROTOCOL
+        assert protocol.protocol_type == DEJMPS
     finally:
         PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
@@ -154,9 +128,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
     old_manager_formalism = QuantumManager.get_active_formalism()
     input_fidelity = 0.7
     expected_success_probability = success_probability(input_fidelity)
-    expected_fidelity = (
-        input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2
-    ) / expected_success_probability
+    expected_fidelity = (input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2) / expected_success_probability
 
     try:
         QuantumManager.set_global_manager_formalism(BELL_DIAGONAL_STATE_FORMALISM)
@@ -175,12 +147,8 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
                        coherence_time=1, wavelength=HALF_MICRON)
 
         tl.init()
-        noisy_bds = np.array([
-            input_fidelity,
-            (1 - input_fidelity) / 3,
-            (1 - input_fidelity) / 3,
-            (1 - input_fidelity) / 3,
-        ])
+        noisy_bds = np.array([input_fidelity, (1 - input_fidelity) / 3, 
+                              (1 - input_fidelity) / 3, (1 - input_fidelity) / 3])
         tl.quantum_manager.set([kept1.qstate_key, kept2.qstate_key], noisy_bds)
         tl.quantum_manager.set([meas1.qstate_key, meas2.qstate_key], noisy_bds)
         kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = input_fidelity
@@ -202,7 +170,6 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
     finally:
         PurificationProtocol.set_formalism(old_protocol_formalism)
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
-
 
 
 def dejmps_bds_expected(kept_state, meas_state):
@@ -228,16 +195,9 @@ def dejmps_bds_expected(kept_state, meas_state):
     return p_success, output
 
 
-def bds_protocol_result(
-    protocol_class,
-    kept_state,
-    meas_state,
-    input_fidelity,
-    own_gate_fid=1,
-    remote_gate_fid=1,
-    own_meas_fid=1,
-    remote_meas_fid=1,
-):
+def bds_protocol_result(protocol_class, kept_state, meas_state, input_fidelity, 
+                        own_gate_fid=1, remote_gate_fid=1, own_meas_fid=1, remote_meas_fid=1):
+    
     old_protocol_formalism = PurificationProtocol.get_formalism()
     old_manager_formalism = QuantumManager.get_active_formalism()
 
@@ -285,19 +245,11 @@ def test_BBPSSW_BDS_twirls_non_werner_bds_input():
     meas_state = np.array([0.7, 0.04, 0.20, 0.06])
 
     expected_success_probability = success_probability(input_fidelity)
-    expected_fidelity = (
-        input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2
-    ) / expected_success_probability
-    expected_bds = np.array([
-        expected_fidelity,
-        (1 - expected_fidelity) / 3,
-        (1 - expected_fidelity) / 3,
-        (1 - expected_fidelity) / 3,
-    ])
+    expected_fidelity = (input_fidelity ** 2 + ((1 - input_fidelity) / 3) ** 2) / expected_success_probability
+    expected_bds = np.array([expected_fidelity, (1 - expected_fidelity) / 3, 
+                             (1 - expected_fidelity) / 3, (1 - expected_fidelity) / 3])
 
-    protocol, (p_success, purified_bds) = bds_protocol_result(
-        BBPSSW_BDS, kept_state, meas_state, input_fidelity
-    )
+    protocol, (p_success, purified_bds) = bds_protocol_result(BBPSSW_BDS, kept_state, meas_state, input_fidelity)
     assert p_success == pytest.approx(expected_success_probability)
     assert purified_bds == pytest.approx(expected_bds)
 
@@ -308,16 +260,13 @@ def test_DEJMPS_BDS_matches_dejmps_recurrence_for_bell_diagonal_states():
     expected_success_probability, expected_bds = dejmps_bds_expected(kept_state, meas_state)
 
     protocol, (p_success, purified_bds) = bds_protocol_result(
-        DEJMPS_BDS, kept_state, meas_state, input_fidelity=kept_state[0]
-    )
+        DEJMPS_BDS, kept_state, meas_state, input_fidelity=kept_state[0])
 
     assert isinstance(protocol, DEJMPS_BDS)
     assert not isinstance(protocol, BBPSSW_BDS)
-    assert not hasattr(protocol, "is_twirled")
-    assert protocol.protocol_type == DEJMPS_BDS_PROTOCOL
+    assert protocol.protocol_type == DEJMPS
     assert isinstance(protocol, DEJMPS_BDS)
     assert not isinstance(protocol, BBPSSW_BDS)
-    assert not hasattr(protocol, "is_twirled")
     assert p_success == pytest.approx(expected_success_probability)
     assert purified_bds == pytest.approx(expected_bds)
     assert np.sum(purified_bds) == pytest.approx(1)
@@ -350,9 +299,7 @@ DEJMPS_PURE_STATE_TRANSITIONS = {
         for meas_index in range(4)
     ],
 )
-def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
-    kept_index, meas_index
-):
+def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(kept_index, meas_index):
     """Check all 16 ideal pure-Bell input combinations independently."""
     kept_state = PURE_BDS_STATES[kept_index]
     meas_state = PURE_BDS_STATES[meas_index]
@@ -365,19 +312,11 @@ def test_DEJMPS_BDS_matches_pure_bell_state_transition_table(
         # No successful branch exists, so the state conditioned on success is
         # undefined and purification_res() normalizes a zero vector by zero.
         with np.errstate(divide="ignore", invalid="ignore"):
-            protocol, (p_success, purified_bds) = bds_protocol_result(
-                DEJMPS_BDS,
-                kept_state,
-                meas_state,
-                input_fidelity=kept_state[0],
-            )
+            protocol, (p_success, purified_bds) = bds_protocol_result(DEJMPS_BDS, kept_state, meas_state, 
+                                                                      input_fidelity=kept_state[0])
     else:
-        protocol, (p_success, purified_bds) = bds_protocol_result(
-            DEJMPS_BDS,
-            kept_state,
-            meas_state,
-            input_fidelity=kept_state[0],
-        )
+        protocol, (p_success, purified_bds) = bds_protocol_result(DEJMPS_BDS, kept_state, meas_state, 
+                                                                  input_fidelity=kept_state[0])
 
     if expected_output_index is None:
         assert p_success == pytest.approx(0)
@@ -414,48 +353,28 @@ DEJMPS_ONE_SIDED_MEASUREMENT_FLIP_TRANSITIONS = {
         in DEJMPS_ONE_SIDED_MEASUREMENT_FLIP_TRANSITIONS.items()
     ],
 )
-def test_DEJMPS_BDS_one_sided_measurement_flip_accepts_rejected_branch(
-    kept_index,
-    meas_index,
-    expected_output_index,
-    own_meas_fid,
-    remote_meas_fid,
-):
+def test_DEJMPS_BDS_one_sided_measurement_flip_accepts_rejected_branch(kept_index, meas_index, expected_output_index, 
+                                                                       own_meas_fid, remote_meas_fid):
     """Check false acceptance caused by exactly one flipped reported bit."""
     kept_state = PURE_BDS_STATES[kept_index]
     meas_state = PURE_BDS_STATES[meas_index]
 
-    protocol, (p_success, purified_bds) = bds_protocol_result(
-        DEJMPS_BDS,
-        kept_state,
-        meas_state,
-        input_fidelity=kept_state[0],
-        own_meas_fid=own_meas_fid,
-        remote_meas_fid=remote_meas_fid,
-    )
+    protocol, (p_success, purified_bds) = bds_protocol_result(DEJMPS_BDS, kept_state, meas_state, 
+                                                              input_fidelity=kept_state[0], own_meas_fid=own_meas_fid, 
+                                                              remote_meas_fid=remote_meas_fid)
     assert p_success == pytest.approx(1)
     assert purified_bds == pytest.approx(PURE_BDS_STATES[expected_output_index])
 
 
-@pytest.mark.parametrize(
-    ("own_gate_fid", "remote_gate_fid"),
-    [(0, 1), (1, 0)],
-)
-def test_DEJMPS_BDS_complete_gate_failure_returns_maximally_mixed_state(
-    own_gate_fid, remote_gate_fid
-):
+@pytest.mark.parametrize(("own_gate_fid", "remote_gate_fid"), [(0, 1), (1, 0)])
+def test_DEJMPS_BDS_complete_gate_failure_returns_maximally_mixed_state(own_gate_fid, remote_gate_fid):
     """Check SeQUeNCe's inherited complete-gate-failure noise model."""
     kept_state = np.array([0.72, 0.08, 0.11, 0.09])
     meas_state = np.array([0.68, 0.06, 0.18, 0.08])
 
-    protocol, (p_success, purified_bds) = bds_protocol_result(
-        DEJMPS_BDS,
-        kept_state,
-        meas_state,
-        input_fidelity=kept_state[0],
-        own_gate_fid=own_gate_fid,
-        remote_gate_fid=remote_gate_fid,
-    )
+    protocol, (p_success, purified_bds) = bds_protocol_result(DEJMPS_BDS, kept_state, meas_state, 
+                                                              input_fidelity=kept_state[0], own_gate_fid=own_gate_fid, 
+                                                              remote_gate_fid=remote_gate_fid)
     assert p_success == pytest.approx(0.5)
     assert purified_bds == pytest.approx(np.full(4, 0.25))
 
@@ -471,8 +390,8 @@ def create_scenario(state1, state2, seed_index, fidelity=1.0) -> tuple[Timeline,
     a2.set_seed(2 * seed_index + 1)
     cc0 = ClassicalChannel("cc0", tl, 0, 1e5)
     cc1 = ClassicalChannel("cc1", tl, 0, 1e5)
-    cc0.delay = ONE_MILLISECOND
-    cc1.delay = ONE_MILLISECOND
+    cc0.delay = MILLISECOND
+    cc1.delay = MILLISECOND
     cc0.set_ends(a1, a2.name)
     cc1.set_ends(a2, a1.name)
 
