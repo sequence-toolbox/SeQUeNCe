@@ -41,7 +41,6 @@ def update_cchannel_delay(topo: RouterNetTopo, classical_delay_node: float, clas
     for qc in topo.qchannels:
         router = qc.sender.name
         bsm = qc.receiver
-        router, bsm = qc.sender.name, qc.receiver
         all_paths[(router, bsm)] = (qc.distance, 0, (router, bsm))
         all_paths[(bsm, router)] = (qc.distance, 0, (bsm, router))
 
