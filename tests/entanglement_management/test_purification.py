@@ -239,6 +239,60 @@ def bds_protocol_result(protocol_class, kept_state, meas_state, input_fidelity,
         QuantumManager.set_global_manager_formalism(old_manager_formalism)
 
 
+def bbpssw_expected(kept_fid, meas_fid, own_gate_fid, remote_gate_fid, own_meas_fid, remote_meas_fid):
+    """Enumerate BBPSSW Bell-state and measurement-error branches."""
+    kept_error_prob = (1 - kept_fid) / 3
+    meas_error_prob = (1 - meas_fid) / 3
+    kept_state = [kept_fid, kept_error_prob, kept_error_prob, kept_error_prob]
+    meas_state = [meas_fid, meas_error_prob, meas_error_prob, meas_error_prob]
+
+    # Bell-state labels are (phase, amplitude) in [Phi+, Phi-, Psi+, Psi-] order.
+    bell_bits = [(0, 0), (1, 0), (0, 1), (1, 1)]
+    accepted_prob = 0
+    accepted_phi_plus_prob = 0
+
+    for kept_index, (kept_phase, kept_amplitude) in enumerate(bell_bits):
+        for meas_index, (meas_phase, meas_amplitude) in enumerate(bell_bits):
+            input_prob = kept_state[kept_index] * meas_state[meas_index]
+            retained_phi_plus = kept_amplitude == 0 and kept_phase == meas_phase
+
+            for own_flip, own_flip_prob in ((0, own_meas_fid), (1, 1 - own_meas_fid)):
+                for remote_flip, remote_flip_prob in ((0, remote_meas_fid), (1, 1 - remote_meas_fid)):
+                    branch_prob = input_prob * own_flip_prob * remote_flip_prob
+                    reported_equal = kept_amplitude ^ meas_amplitude ^ own_flip ^ remote_flip == 0
+                    if reported_equal:
+                        accepted_prob += branch_prob
+                        if retained_phi_plus:
+                            accepted_phi_plus_prob += branch_prob
+
+    joint_gate_fid = own_gate_fid * remote_gate_fid
+    p_success = joint_gate_fid * accepted_prob + (1 - joint_gate_fid) / 2
+    phi_plus_numerator = joint_gate_fid * accepted_phi_plus_prob + (1 - joint_gate_fid) / 8
+    return p_success, phi_plus_numerator / p_success
+
+
+@pytest.mark.parametrize(
+    ("own_gate_fid", "remote_gate_fid", "own_meas_fid", "remote_meas_fid"),
+    [(1, 1, 1, 1), (0.91, 0.83, 0.94, 0.87), (0, 0.76, 0.88, 0.79), (1, 1, 1, 0)],
+)
+def test_BBPSSW_BDS_matches_enumerated_noisy_recurrence(
+    own_gate_fid, remote_gate_fid, own_meas_fid, remote_meas_fid):
+    kept_state = np.array([0.73, 0.12, 0.09, 0.06])
+    meas_state = np.array([0.64, 0.08, 0.17, 0.11])
+    expected_p_success, expected_fid = bbpssw_expected(
+        kept_state[0], meas_state[0], own_gate_fid, remote_gate_fid, own_meas_fid, remote_meas_fid)
+
+    _, (p_success, purified_bds) = bds_protocol_result(BBPSSW_BDS, kept_state, meas_state, 
+                                                       input_fidelity=kept_state[0], own_gate_fid=own_gate_fid, 
+                                                       remote_gate_fid=remote_gate_fid, own_meas_fid=own_meas_fid, 
+                                                       remote_meas_fid=remote_meas_fid)
+
+    expected_error_prob = (1 - expected_fid) / 3
+    expected_bds = np.array([expected_fid, expected_error_prob, expected_error_prob, expected_error_prob])
+    assert p_success == pytest.approx(expected_p_success)
+    assert purified_bds == pytest.approx(expected_bds)
+
+
 def test_BBPSSW_BDS_twirls_non_werner_bds_input():
     input_fidelity = 0.7
     kept_state = np.array([0.7, 0.2, 0.05, 0.05])

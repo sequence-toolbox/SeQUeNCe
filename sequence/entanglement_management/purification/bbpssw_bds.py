@@ -72,7 +72,8 @@ class BBPSSW_BDS(PurificationProtocol):
         # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
         # purification will use the updated BDS as input, and also update the BDS with purification_res
         # the bds_decohere() method will also update the last_update_time of quantum memories
-        # in this case it will be the time when purification is initiated, thus allowing correct accounting of idling decoherence
+        # in this case it will be the time when purification is initiated, thus allowing correct accounting of
+        # idling decoherence
 
         self.meas_memo.bds_decohere()
         remote_meas_memo.bds_decohere()
@@ -163,40 +164,44 @@ class BBPSSW_BDS(PurificationProtocol):
         kept_input_state = self.owner.timeline.quantum_manager.get(self.kept_memo.qstate_key)
         meas_input_state = self.owner.timeline.quantum_manager.get(self.meas_memo.qstate_key)
 
-        own_node, remote_node = self.owner, self.owner.timeline.get_entity_by_name(self.remote_node_name)
+        own_node = self.owner
+        remote_node = self.owner.timeline.get_entity_by_name(self.remote_node_name)
 
-        # gate and measurement fidelities on protocol owner node
-        own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid
-        # gate and measurement fidelities on remote node
-        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
+        own_gate_fid = own_node.gate_fid
+        own_meas_fid = own_node.meas_fid
+        remote_gate_fid = remote_node.gate_fid
+        remote_meas_fid = remote_node.meas_fid
 
-        kept_elem_1 = kept_input_state.state[0]
-        kept_elem_2 = kept_elem_3 = kept_elem_4 = (1 - kept_elem_1) / 3
-        meas_elem_1 = meas_input_state.state[0]
-        meas_elem_2 = meas_elem_3 = meas_elem_4 = (1 - meas_elem_1) / 3
+        # BBPSSW twirls each input into a Werner state while preserving its Phi+ fidelity.
+        kept_pair_fid = kept_input_state.state[0]
+        meas_pair_fid = meas_input_state.state[0]
+        kept_error_prob = (1 - kept_pair_fid) / 3
+        meas_error_prob = (1 - meas_pair_fid) / 3
 
-        # assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
-        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
+        kept_phi_prob = kept_pair_fid + kept_error_prob
+        meas_phi_prob = meas_pair_fid + meas_error_prob
+        matching_amplitude_prob = kept_phi_prob * meas_phi_prob + (1 - kept_phi_prob) * (1 - meas_phi_prob)
+        
+        # Measurement reports agree when both results are correct or both are flipped.
+        same_report_prob = own_meas_fid * remote_meas_fid + (1 - own_meas_fid) * (1 - remote_meas_fid)
+        opposite_report_prob = 1 - same_report_prob
+        joint_gate_fid = own_gate_fid * remote_gate_fid
 
-        # calculate success probability with analytical formula
-        p_succ = 1 / 2 + own_node_gate_fid * remote_node_gate_fid * (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
-            + own_node_gate_fid * remote_node_gate_fid * (a * b + (1 - a) * (1 - b)) * (own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid) \
-            - own_node_meas_fid * (1 - remote_node_meas_fid) - (1 - own_node_meas_fid) * remote_node_meas_fid) - own_node_gate_fid * remote_node_gate_fid / 2
+        # Faulty gates produce a fully mixed output, whose reported parity agrees with probability 1/2.
+        p_success = (1 - joint_gate_fid) / 2 + joint_gate_fid * (
+            matching_amplitude_prob * same_report_prob + (1 - matching_amplitude_prob) * opposite_report_prob)
 
-        # calculate the BDS element
-        new_elem_fid = own_node_gate_fid * remote_node_gate_fid * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)) \
-            * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2) + (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
-            * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        # Joint probability of successful postselection and retaining Phi+; a faulty-gate branch contributes
+        # P(success and Phi+) = 1/2 * 1/4 = 1/8.
+        phi_plus_numerator = joint_gate_fid * (
+            same_report_prob * (kept_pair_fid * meas_pair_fid + kept_error_prob * meas_error_prob)
+            + opposite_report_prob * (kept_pair_fid * meas_error_prob + kept_error_prob * meas_error_prob)
+          ) + (1 - joint_gate_fid) / 8
 
-        new_fid = new_elem_fid / p_succ
-        bds_elems = np.array([
-            new_fid,
-            (1 - new_fid) / 3,
-            (1 - new_fid) / 3,
-            (1 - new_fid) / 3,
-        ])
+        new_fid = phi_plus_numerator / p_success
+        new_error_prob = (1 - new_fid) / 3
+        bds_elems = np.array([new_fid, new_error_prob, new_error_prob, new_error_prob])
 
-        log.logger.debug(
-            f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}")
+        log.logger.debug(f"{self.name}, before: f={kept_pair_fid:.6f}, {meas_pair_fid:.6f}; after: f={new_fid:.6f}")
 
-        return p_succ, bds_elems
+        return p_success, bds_elems
