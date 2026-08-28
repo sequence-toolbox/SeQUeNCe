@@ -65,8 +65,7 @@ def test_PurificationProtocol_registered_formalisms_and_factory_selection():
     try:
         registered_formalisms = set(PurificationProtocol.list_protocols())
 
-        assert {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM
-                }.issubset(registered_formalisms)
+        assert {KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM, BELL_DIAGONAL_STATE_FORMALISM}.issubset(registered_formalisms)
 
         for formalism in [KET_VECTOR_FORMALISM, DENSITY_MATRIX_FORMALISM]:
             QuantumManager.set_global_manager_formalism(formalism)
@@ -147,8 +146,7 @@ def test_BBPSSW_BDS_improves_fidelity_for_equal_noisy_pairs():
                        coherence_time=1, wavelength=HALF_MICRON)
 
         tl.init()
-        noisy_bds = np.array([input_fidelity, (1 - input_fidelity) / 3, 
-                              (1 - input_fidelity) / 3, (1 - input_fidelity) / 3])
+        noisy_bds = np.array([input_fidelity, (1 - input_fidelity) / 3, (1 - input_fidelity) / 3, (1 - input_fidelity) / 3])
         tl.quantum_manager.set([kept1.qstate_key, kept2.qstate_key], noisy_bds)
         tl.quantum_manager.set([meas1.qstate_key, meas2.qstate_key], noisy_bds)
         kept1.fidelity = kept2.fidelity = meas1.fidelity = meas2.fidelity = input_fidelity
@@ -489,9 +487,13 @@ def complex_array_equal(arr1, arr2, precision=5):
     return True
 
 
-def correct_order(state, keys):
+def correct_order(state: np.ndarray, keys: list[int]) -> np.ndarray:
+    """correct qubit order if needed
+    """
     if keys[0] > keys[1]:
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ state
+    else:
+        return state
 
 
 def test_BBPSSW_phi_plus_phi_plus():

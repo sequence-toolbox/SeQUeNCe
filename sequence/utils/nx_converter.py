@@ -180,10 +180,10 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=5, output_fil
     if formalism:
         output_dict[Topology.FORMALISM] = formalism
 
-    output_dir = Path(output_directory)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    with open(output_dir / output_file, 'w') as f:
-        json.dump(output_dict, f, indent=2)
+    if output_directory and output_file:
+        output_dir = Path(output_directory)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        with open(output_dir / output_file, 'w') as f:
+            json.dump(output_dict, f, indent=2)
 
     return output_dict, graph_to_name

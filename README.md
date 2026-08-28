@@ -53,7 +53,7 @@ Editable installations let Python use your local source tree directly, so change
 #### (1) Using pip
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-cd sequence
+cd SeQUeNCe
 make install_editable
 ```
 
@@ -80,7 +80,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 Here we clone the repository and let uv configure the development environment with the target python version.
 ```bash
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-cd sequence
+cd SeQUeNCe
 uv sync
 ```
 

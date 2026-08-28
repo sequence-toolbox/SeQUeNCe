@@ -250,13 +250,19 @@ def test_received_message():
 
 
 def test_expire():
+    def fake_action(_memories, _args):
+        raise AssertionError("fake_action should not be called during expiration")
+
+    def fake_condition(_memory_info, _manager, _args):
+        return []
+
     tl = Timeline()
     node = FakeNode("node", tl)
     tl.init()
 
     for info in node.resource_manager.memory_manager:
         info.to_occupied()
-    rule = Rule(0, None, None, None, None)
+    rule = Rule(0, fake_action, fake_condition, {}, {})
     memo_array = node.resource_manager.memory_manager.memory_array
     for i in range(6):
         memo_array[i].detach(memo_array)

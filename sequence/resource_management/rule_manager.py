@@ -37,7 +37,7 @@ class RuleManager:
         self.rules = []
         self.resource_manager = None
 
-    def set_resource_manager(self, resource_manager: "ResourceManager"):
+    def set_resource_manager(self, resource_manager: ResourceManager):
         """Method to set overseeing resource manager.
 
         Args:
@@ -46,7 +46,7 @@ class RuleManager:
 
         self.resource_manager = resource_manager
 
-    def load(self, rule: "Rule") -> bool:
+    def load(self, rule: Rule) -> bool:
         """Method to load rule into ruleset.
 
         Tries to insert rule into internal `rules` list based on priority.
@@ -70,20 +70,21 @@ class RuleManager:
         self.rules.insert(left, rule)
         return True
 
-    def expire(self, rule: "Rule") -> list["EntanglementProtocol"]:
+    def expire(self, rule: Rule) -> list[EntanglementProtocol] | None:
         """Method to remove expired protocol.
 
         Args:
             rule (Rule): rule to remove.
 
         Returns:
-            list[EntanglementProtocol]: list of protocols created by rule (if any).
+            list[EntanglementProtocol] | None: list of protocols created by rule (if any).
                 Note that when a protocol finishes, it will be removed from rule.protocols.
+                If the rule is not found in the rule manager, None is returned.
         """
         if rule in self.rules:
             self.rules.remove(rule)
         else:
-            log.logger.info(f'{self.resource_manager.owner} rule not exist: {rule}')
+            return None
         return rule.protocols
 
     def get_memory_manager(self) -> MemoryManager:
@@ -114,9 +115,9 @@ class Rule:
 
     Attributes:
         priority (int): priority of the rule, used as a tiebreaker when conditions of multiple rules are met.
-        action (Callable[[list["MemoryInfo"]], tuple["Protocol", list["str"], list[Callable[["Protocol"], bool]]]]):
+        action (Callable[[list[MemoryInfo]], tuple["Protocol", list["str"], list[Callable[["Protocol"], bool]]]]):
             action to take when rule condition is met.
-        condition (Callable[["MemoryInfo", "MemoryManager"], list["MemoryInfo"]]): condition required by rule.
+        condition (Callable[[MemoryInfo, "MemoryManager"], list[MemoryInfo]]): condition required by rule.
         protocols (list[Protocols]): protocols created by rule.
         rule_manager (RuleManager): reference to rule manager object where rule is installed.
         reservation (Reservation): associated reservation.
@@ -132,7 +133,7 @@ class Rule:
         self.condition_args: Arguments = condition_args
         self.protocols: list[EntanglementProtocol] = []
         self.rule_manager = None
-        self.reservation: "Reservation" | None = None
+        self.reservation: Reservation | None = None
 
     def __str__(self):
         action_name_list = str(self.action).split(' ')
@@ -141,7 +142,7 @@ class Rule:
         condition_name = condition_name_list[1] if len(condition_name_list) >= 2 else condition_name_list[0]
         return f"|action={action_name}, args={self.action_args}; condition={condition_name}; args={self.condition_args}|"
 
-    def set_rule_manager(self, rule_manager: "RuleManager") -> None:
+    def set_rule_manager(self, rule_manager: RuleManager) -> None:
         """Method to assign rule to a rule manager.
 
         Args:
@@ -150,7 +151,7 @@ class Rule:
 
         self.rule_manager = rule_manager
 
-    def do(self, memories_info: list["MemoryInfo"]) -> None:
+    def do(self, memories_info: list[MemoryInfo]) -> None:
         """Method to perform rule activation and send requirements to other nodes.
 
         Args:
@@ -168,7 +169,7 @@ class Rule:
         for dst, req_func, args in zip(req_dsts, req_condition_funcs, req_args):
             self.rule_manager.send_request(protocol, dst, req_func, args)
 
-    def is_valid(self, memory_info: "MemoryInfo") -> list["MemoryInfo"]:
+    def is_valid(self, memory_info: MemoryInfo) -> list[MemoryInfo]:
         """Method to check for memories meeting condition.
 
         Args:
@@ -181,10 +182,10 @@ class Rule:
         manager = self.rule_manager.get_memory_manager()
         return self.condition(memory_info, manager, self.condition_args)
 
-    def set_reservation(self, reservation: "Reservation") -> None:
+    def set_reservation(self, reservation: Reservation) -> None:
         self.reservation = reservation
 
-    def get_reservation(self) -> "Reservation":
+    def get_reservation(self) -> Reservation:
         if self.reservation is None:
             raise RuntimeError("Reservation is not set.")
         return self.reservation
