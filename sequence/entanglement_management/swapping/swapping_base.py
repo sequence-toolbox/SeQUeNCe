@@ -198,7 +198,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
         Note:
             ``memories`` is intentionally unused; swapping uses the memos it
-            already holds. Kept for interface compatibility (see issue #170).
+            already holds. Kept for interface compatibility.
 
         Args:
             protocol (str): other protocol name.
@@ -360,7 +360,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
         Note:
             ``memories`` is intentionally unused; swapping uses the memos it
-            already holds. Kept for interface compatibility (see issue #170).
+            already holds. Kept for interface compatibility.
 
         Args:
             protocol (str): other protocol name.
