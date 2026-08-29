@@ -190,15 +190,14 @@ class BBPSSW_BDS(PurificationProtocol):
         p_s_w = (
             p1 * p2 * (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + F1 * e2 + e1 * F2 + 5 * e1 * e2)
           + p1 * p2 * (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (2 * F1 * e2 + 2 * e1 * F2 + 4 * e1 * e2)
-          + (1 - p1 * p2) / 2
-        )
+          + (1 - p1 * p2) / 2 )
 
         # F_s_w: Phi+ fidelity of the retained pair conditioned on purification success (Eq. 9).
         F_s_w_numerator = (
             (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + e1 * e2)
           + (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (F1 * e2 + e1 * e2)
-          + (1 - p1 * p2) / (8 * p1 * p2)
-        )
+          + (1 - p1 * p2) / (8 * p1 * p2) )
+        
         F_s_w = F_s_w_numerator / (p_s_w / (p1 * p2))
 
         bds_elems = np.array([F_s_w, (1 - F_s_w) / 3, (1 - F_s_w) / 3, (1 - F_s_w) / 3])

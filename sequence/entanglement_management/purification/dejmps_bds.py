@@ -103,10 +103,12 @@ class DEJMPS_BDS(PurificationProtocol):
         own_node = self.owner
         remote_node = self.owner.timeline.get_entity_by_name(self.remote_node_name)
 
-        own_gate_fid = own_node.gate_fid
-        own_meas_fid = own_node.meas_fid
-        remote_gate_fid = remote_node.gate_fid
-        remote_meas_fid = remote_node.meas_fid
+        # p1 and p2: probabilities that the owner and remote nodes implement their local CNOT gates perfectly.
+        p1 = own_node.gate_fid
+        p2 = remote_node.gate_fid
+        # eta1 and eta2: probabilities that the owner and remote nodes report the correct measurement result.
+        eta1 = own_node.meas_fid
+        eta2 = remote_node.meas_fid
 
         kept_elem_1 = kept_input_state.state[0]
         kept_elem_2 = kept_input_state.state[3]
@@ -118,32 +120,41 @@ class DEJMPS_BDS(PurificationProtocol):
         meas_elem_3 = meas_input_state.state[2]
         meas_elem_4 = meas_input_state.state[1]
 
+        # a and b: probability masses of the kept and measured pairs in the {Phi+, Psi-}
+        # DEJMPS postselection class.
         a = kept_elem_1 + kept_elem_2
         b = meas_elem_1 + meas_elem_2
 
-        same_report = (own_meas_fid * remote_meas_fid + (1 - own_meas_fid) * (1 - remote_meas_fid))
-        opposite_report = (own_meas_fid * (1 - remote_meas_fid) + (1 - own_meas_fid) * remote_meas_fid)
-        joint_gate_fid = own_gate_fid * remote_gate_fid
+        # same_report: probability both readouts are correct or both flip, preserving the true parity.
+        same_report = eta1 * eta2 + (1 - eta1) * (1 - eta2)
+        # opposite_report: probability exactly one readout flips, reversing the true parity.
+        opposite_report = eta1 * (1 - eta2) + (1 - eta1) * eta2
+        # joint_gate_fid: probability both local CNOT gates are ideal, assuming independent gate errors.
+        joint_gate_fid = p1 * p2
 
         p_succ = (
             1 / 2 + joint_gate_fid * opposite_report + joint_gate_fid * (a * b + (1 - a) * (1 - b))
-            * (same_report - opposite_report) - joint_gate_fid / 2)
+            * (same_report - opposite_report) - joint_gate_fid / 2 )
 
         new_elem_1 = (
             joint_gate_fid * (same_report * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
-            + opposite_report * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) + (1 - joint_gate_fid) / 8)
+          + opposite_report * (kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4))
+          + (1 - joint_gate_fid) / 8 )
 
         new_elem_2 = (
             joint_gate_fid * (same_report * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
-            + opposite_report * (kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)) + (1 - joint_gate_fid) / 8)
+          + opposite_report * (kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3))
+          + (1 - joint_gate_fid) / 8 )
 
         new_elem_3 = (
             joint_gate_fid * (same_report * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
-            + opposite_report * (kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)) + (1 - joint_gate_fid) / 8)
+          + opposite_report * (kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2))
+          + (1 - joint_gate_fid) / 8 )
 
         new_elem_4 = (
             joint_gate_fid * (same_report * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
-            + opposite_report * (kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) + (1 - joint_gate_fid) / 8)
+          + opposite_report * (kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1))
+          + (1 - joint_gate_fid) / 8 )
         
         bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
         bds_elems = bds_elems / p_succ
