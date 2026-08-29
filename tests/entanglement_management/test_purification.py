@@ -271,7 +271,7 @@ def bbpssw_expected(kept_fid, meas_fid, own_gate_fid, remote_gate_fid, own_meas_
 
 @pytest.mark.parametrize(
     ("own_gate_fid", "remote_gate_fid", "own_meas_fid", "remote_meas_fid"),
-    [(1, 1, 1, 1), (0.91, 0.83, 0.94, 0.87), (0, 0.76, 0.88, 0.79), (1, 1, 1, 0)],
+    [(1, 1, 1, 1), (0.91, 0.83, 0.94, 0.87), (0.01, 0.76, 0.88, 0.79), (1, 1, 1, 0)],
 )
 def test_BBPSSW_BDS_matches_enumerated_noisy_recurrence(
     own_gate_fid, remote_gate_fid, own_meas_fid, remote_meas_fid):

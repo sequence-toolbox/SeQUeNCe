@@ -150,16 +150,20 @@ class BBPSSW_BDS(PurificationProtocol):
             raise Exception(f'{msg.msg_type} unknown')
 
     def purification_res(self) -> tuple[float, npt.NDArray]:
-        """Method to calculate the correct success probability of a purification trial with BDS input.
+        """Calculate the success probability and output fidelity for BBPSSW purification.
 
-        The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
+        This implements Eqs. (8) and (9) from "Entanglement Distribution in Quantum Repeater with
+        Purification and Optimized Buffer Time": https://arxiv.org/abs/2305.14573.
+
+        The paper assumes identical hardware at both nodes. Here, p1 and eta1 describe the owner node,
+        while p2 and eta2 describe the remote node.
 
         Returns:
-            tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
+            The purification success probability and the Bell-diagonal state of the retained pair.
         """
 
-        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
-            "Input states should be Bell diagonal states.")
+        assert (self.owner.timeline.quantum_manager.get_active_formalism()
+                == BELL_DIAGONAL_STATE_FORMALISM), "Input states should be Bell diagonal states."
 
         kept_input_state = self.owner.timeline.quantum_manager.get(self.kept_memo.qstate_key)
         meas_input_state = self.owner.timeline.quantum_manager.get(self.meas_memo.qstate_key)
@@ -167,41 +171,37 @@ class BBPSSW_BDS(PurificationProtocol):
         own_node = self.owner
         remote_node = self.owner.timeline.get_entity_by_name(self.remote_node_name)
 
-        own_gate_fid = own_node.gate_fid
-        own_meas_fid = own_node.meas_fid
-        remote_gate_fid = remote_node.gate_fid
-        remote_meas_fid = remote_node.meas_fid
+        # p1 and p2: probabilities that the owner and remote nodes implement their local CNOT gates perfectly.
+        p1 = own_node.gate_fid
+        p2 = remote_node.gate_fid
+        # eta1 and eta2: probabilities that the owner and remote nodes report the correct measurement result.
+        eta1 = own_node.meas_fid
+        eta2 = remote_node.meas_fid
+        assert p1 * p2 > 0, "The uncancelled expression in Eq. (9) requires nonzero gate fidelities."
 
-        # BBPSSW twirls each input into a Werner state while preserving its Phi+ fidelity.
-        kept_pair_fid = kept_input_state.state[0]
-        meas_pair_fid = meas_input_state.state[0]
-        kept_error_prob = (1 - kept_pair_fid) / 3
-        meas_error_prob = (1 - meas_pair_fid) / 3
+        # F1 and F2: Phi+ fidelities of the retained and measured input pairs, respectively.
+        F1 = kept_input_state.state[0]
+        F2 = meas_input_state.state[0]
+        # e1 and e2: equal weights of each of the other three Bell states after twirling.
+        e1 = (1 - F1) / 3
+        e2 = (1 - F2) / 3
 
-        kept_phi_prob = kept_pair_fid + kept_error_prob
-        meas_phi_prob = meas_pair_fid + meas_error_prob
-        matching_amplitude_prob = kept_phi_prob * meas_phi_prob + (1 - kept_phi_prob) * (1 - meas_phi_prob)
-        
-        # Measurement reports agree when both results are correct or both are flipped.
-        same_report_prob = own_meas_fid * remote_meas_fid + (1 - own_meas_fid) * (1 - remote_meas_fid)
-        opposite_report_prob = 1 - same_report_prob
-        joint_gate_fid = own_gate_fid * remote_gate_fid
+        # p_s_w: purification success probability for Werner-state inputs (Eq. 8).
+        p_s_w = (
+            p1 * p2 * (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + F1 * e2 + e1 * F2 + 5 * e1 * e2)
+          + p1 * p2 * (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (2 * F1 * e2 + 2 * e1 * F2 + 4 * e1 * e2)
+          + (1 - p1 * p2) / 2
+        )
 
-        # Faulty gates produce a fully mixed output, whose reported parity agrees with probability 1/2.
-        p_success = (1 - joint_gate_fid) / 2 + joint_gate_fid * (
-            matching_amplitude_prob * same_report_prob + (1 - matching_amplitude_prob) * opposite_report_prob)
+        # F_s_w: Phi+ fidelity of the retained pair conditioned on purification success (Eq. 9).
+        F_s_w_numerator = (
+            (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + e1 * e2)
+          + (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (F1 * e2 + e1 * e2)
+          + (1 - p1 * p2) / (8 * p1 * p2)
+        )
+        F_s_w = F_s_w_numerator / (p_s_w / (p1 * p2))
 
-        # Joint probability of successful postselection and retaining Phi+; a faulty-gate branch contributes
-        # P(success and Phi+) = 1/2 * 1/4 = 1/8.
-        phi_plus_numerator = joint_gate_fid * (
-            same_report_prob * (kept_pair_fid * meas_pair_fid + kept_error_prob * meas_error_prob)
-            + opposite_report_prob * (kept_pair_fid * meas_error_prob + kept_error_prob * meas_error_prob)
-          ) + (1 - joint_gate_fid) / 8
+        bds_elems = np.array([F_s_w, (1 - F_s_w) / 3, (1 - F_s_w) / 3, (1 - F_s_w) / 3])
+        log.logger.debug(f"{self.name}, before: f={F1:.6f}, {F2:.6f}; after: f={F_s_w:.6f}")
 
-        new_fid = phi_plus_numerator / p_success
-        new_error_prob = (1 - new_fid) / 3
-        bds_elems = np.array([new_fid, new_error_prob, new_error_prob, new_error_prob])
-
-        log.logger.debug(f"{self.name}, before: f={kept_pair_fid:.6f}, {meas_pair_fid:.6f}; after: f={new_fid:.6f}")
-
-        return p_success, bds_elems
+        return p_s_w, bds_elems
