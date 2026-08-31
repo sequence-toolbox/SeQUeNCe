@@ -59,6 +59,23 @@ class BBPSSW_BDS(PurificationProtocol):
 
         Run the circuit below on two pairs of entangled memories on both sides of protocol. (Original implementation)
 
+        1) Invoke single-memory decoherence channels, i.e., bds_decohere(), on each involved quantum memory (in total 4)
+        purification will use the updated BDS as input. The bds_decohere() method will also update the last_update_time 
+        of quantum memories. In this case it will be the time when purification is initiated, thus allowing correct 
+        accounting of idling decoherence
+
+        2) Update the BDS with purification_res()
+        
+        3) Use following trick to determine if the measurement results on both sides equal:
+           We consider that both sides do a biased coin flip,
+           with head (getting 1) probability p, and tail (getting 0) probability 1-p.
+           If we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
+           to simulate a correct success probability we require p^2 + (1-p)^2 = q,
+           where q is the real success probability of purification.
+           As we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2),
+           both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1);
+           We choose p = (1 + \sqrt{2q-1})/2
+
         Side Effects:
             May update parameters of kept memory.
             Will send message to other protocol instance.
@@ -69,26 +86,11 @@ class BBPSSW_BDS(PurificationProtocol):
         remote_kept_memo: Memory = remote_memos[0]
         remote_meas_memo: Memory = remote_memos[1]
 
-        # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
-        # purification will use the updated BDS as input, and also update the BDS with purification_res
-        # the bds_decohere() method will also update the last_update_time of quantum memories
-        # in this case it will be the time when purification is initiated, thus allowing correct accounting of
-        # idling decoherence
-
+        # Invoke single-memory decoherence channels
         self.meas_memo.bds_decohere()
         remote_meas_memo.bds_decohere()
         self.kept_memo.bds_decohere()
         remote_kept_memo.bds_decohere()
-
-        # use following trick to determine if the measurement results on both sides equal:
-        # We consider that both sides do a biased coin flip,
-        # with head (getting 1) probability p, and tail (getting 0) probability 1-p.
-        # If we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
-        # to simulate a correct success probability we require p^2 + (1-p)^2 = q,
-        # where q is the real success probability of purification.
-        # As we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2),
-        # both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1);
-        # We choose p = (1 + \sqrt{2q-1})/2
 
         # calculate correct success probability (q).
         # Also determine BDS density matrix elements of kept entangled pair conditioned on successful purification,
@@ -100,9 +102,6 @@ class BBPSSW_BDS(PurificationProtocol):
             self.meas_res = 1
         else:
             self.meas_res = 0
-
-        # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started,
-        #  not the time when purification result is determined (after CC)
 
         # modify entangled state of kept pair
         if self.owner.name > self.remote_node_name:  # avoid both ends setting memory state
