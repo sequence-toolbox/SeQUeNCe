@@ -136,44 +136,25 @@ class RequestApp(App):
 
         if info.index in self.memo_to_reservation:
             reservation = self.memo_to_reservation[info.index]
-            remote_is_peer = (
-                info.remote_node == reservation.initiator
-                or info.remote_node == reservation.responder
-            )
-            if not remote_is_peer:
-                return
-
-            if info.fidelity < reservation.fidelity:
+            valid_fidelity = info.fidelity >= reservation.fidelity
+            if info.remote_node == reservation.initiator and valid_fidelity:
+                self.node.resource_manager.update(None, info.memory, "RAW")
                 metrics.record(
-                    EventTypes.DELIVERY_FIDELITY_VIOLATION,
+                    EventTypes.DELIVERY,
                     self.node.name,
                     fidelity=info.fidelity,
-                    target_fidelity=reservation.fidelity,
-                    identity=reservation.identity,
-                )
-                return
-
+                    **reservation)
+            elif info.remote_node == reservation.responder and valid_fidelity:
+                self.memory_counter += 1
+                log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
+                self.node.resource_manager.update(None, info.memory, "RAW")
             metrics.record(
                 EventTypes.DELIVERY,
                 self.node.name,
                 fidelity=info.fidelity,
-                identity=reservation.identity,
-                initiator=reservation.initiator,
-                responder=reservation.responder,
-                start_time=reservation.start_time,
-                end_time=reservation.end_time,
-                memory_size=reservation.memory_size,
-                entanglement_number=reservation.entanglement_number,
-                target_fidelity=reservation.fidelity,
-                path=list(reservation.path),
-            )
-            if info.remote_node == reservation.initiator:
-                self.node.resource_manager.update(None, info.memory, "RAW")
-            elif info.remote_node == reservation.responder:
-                self.memory_counter += 1
-                log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
-                self.node.resource_manager.update(None, info.memory, "RAW")
+                **reservation,
 
+            )
     def get_throughput(self) -> float:
         warnings.warn(
             "get_throughput is deprecated and will be removed in a future release, use THROUGHPUT_METRIC from the metrics module instead",

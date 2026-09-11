@@ -17,7 +17,6 @@ from . import builtins
 from .builtins import (
     ADMISSION_RATE_METRIC,
     BELL_PAIR_UTILIZATION_METRIC,
-    DELIVERY_FIDELITY_VIOLATION_RATE_METRIC,
     EG_METRIC,
     EP_METRIC,
     ES_METRIC,

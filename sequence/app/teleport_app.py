@@ -5,8 +5,7 @@ including the reservation of entangled pairs and the application of corrections 
 """
 
 from .request_app import RequestApp
-from ..utils import log, metrics
-from ..utils.metrics.event_types import EventTypes
+from ..utils import log
 from ..entanglement_management.teleportation import TeleportMsgType, TeleportProtocol, TeleportMessage
 from ..topology.node import DQCNode
 from ..resource_management.memory_manager import MemoryInfo
@@ -77,30 +76,6 @@ class TeleportApp(RequestApp):
         # once we see our entangled half, hand it to the protocol
         if info.index in self.memo_to_reservation:
             if info.state == "ENTANGLED":
-                reservation = self.memo_to_reservation[info.index]
-                if info.fidelity < reservation.fidelity:
-                    metrics.record(
-                        EventTypes.DELIVERY_FIDELITY_VIOLATION,
-                        self.node.name,
-                        fidelity=info.fidelity,
-                        target_fidelity=reservation.fidelity,
-                        identity=reservation.identity,
-                    )
-                else:
-                    metrics.record(
-                        EventTypes.DELIVERY,
-                        self.node.name,
-                        fidelity=info.fidelity,
-                        identity=reservation.identity,
-                        initiator=reservation.initiator,
-                        responder=reservation.responder,
-                        start_time=reservation.start_time,
-                        end_time=reservation.end_time,
-                        memory_size=reservation.memory_size,
-                        entanglement_number=reservation.entanglement_number,
-                        target_fidelity=reservation.fidelity,
-                        path=list(reservation.path),
-                    )
                 for teleport_protocol in self.teleport_protocols:
                     this_node = info.memory.owner.name
                     remote_node = info.remote_node

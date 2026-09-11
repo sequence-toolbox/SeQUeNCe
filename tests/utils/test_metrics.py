@@ -764,57 +764,6 @@ def test_reservation_success_rate_enable_records_approved_and_delivery():
     }
 
 
-def _fidelity_violation_kwargs(**overrides):
-    return {
-        "fidelity": 0.7,
-        "target_fidelity": 0.9,
-        "identity": 1,
-        **overrides,
-    }
-
-
-def test_delivery_fidelity_violation_rate_computes_violations_over_total():
-    metrics.enable([metrics.DELIVERY_FIDELITY_VIOLATION_RATE_METRIC])
-
-    metrics.record(EventTypes.DELIVERY_FIDELITY_VIOLATION, "n0", **_fidelity_violation_kwargs())
-    metrics.record(EventTypes.DELIVERY_FIDELITY_VIOLATION, "n0", **_fidelity_violation_kwargs(identity=2))
-    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs())
-    metrics.record(EventTypes.DELIVERY, "other", **_delivery_kwargs(identity=3))
-    metrics.record(
-        EventTypes.DELIVERY_FIDELITY_VIOLATION,
-        "other",
-        **_fidelity_violation_kwargs(identity=4),
-    )
-
-    trial = metrics.collect_trial_metrics("n0")
-    assert trial["delivery_fidelity_violation_failures"] == 1
-    assert trial["delivery_fidelity_violation_success"] == 2
-    assert trial["delivery_fidelity_violation_success_rate"] == pytest.approx(2 / 3)
-
-
-def test_delivery_fidelity_violation_rate_zero_without_events():
-    metrics.enable([metrics.DELIVERY_FIDELITY_VIOLATION_RATE_METRIC])
-
-    trial = metrics.collect_trial_metrics("n0")
-    assert trial["delivery_fidelity_violation_failures"] == 0
-    assert trial["delivery_fidelity_violation_success"] == 0
-    assert trial["delivery_fidelity_violation_success_rate"] == 0.0
-
-
-def test_delivery_fidelity_violation_rate_enable_records_both():
-    metrics.enable([metrics.DELIVERY_FIDELITY_VIOLATION_RATE_METRIC])
-
-    metrics.record(EventTypes.DELIVERY_FIDELITY_VIOLATION, "n0", **_fidelity_violation_kwargs())
-    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs())
-
-    records = metrics.storage.get_all()
-    assert len(records) == 2
-    assert {record.event_type for record in records} == {
-        EventTypes.DELIVERY_FIDELITY_VIOLATION,
-        EventTypes.DELIVERY,
-    }
-
-
 def test_jains_fairness_index_equal_allocations():
     metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
 

@@ -110,29 +110,6 @@ BELL_PAIR_UTILIZATION_METRIC = BellPairUtilizationMetric(
     pair_event=EventTypes.EG_SUCCESS,
     delivery_event=EventTypes.DELIVERY,
 )
-DELIVERY_FIDELITY_VIOLATION_RATE_METRIC = CounterMetric(
-    prefix="delivery_fidelity_violation",
-    failure_event=EventTypes.DELIVERY,
-    success_event=EventTypes.DELIVERY_FIDELITY_VIOLATION,
-    rate_field="delivery_fidelity_violation_success_rate",
-)
-DELIVERY_FIDELITY_VIOLATION_RATE_METRIC.__doc__ = """Delivery fidelity violation rate = n_violation / (n_violation + n_delivery).
-
-In SeQUeNCe, n_violation is ``DELIVERY_FIDELITY_VIOLATION`` and n_delivery is
-``DELIVERY``. Violation is the counted ``success_event`` so the collected
-``delivery_fidelity_violation_success_rate`` is the fraction of delivery
-attempts with fidelity below the reservation target.
-
-D. Pérez-Castro, J. Fernández-Herrerín, A. Fernández-Vilas, M. Fernández-Veiga,
-and R. P. Díaz-Redondo, "Simulation of entanglement based quantum networks
-for performance characterization," Computer Networks, vol. 282, p. 112249,
-Jun. 2026, doi: 10.1016/j.comnet.2026.112249.
-
-C. Cicconetti, M. Conti, and A. Passarella, "Quality of Service in Quantum
-Networks," IEEE Network, vol. 36, no. 5, pp. 24-31, Sep. 2022,
-doi: 10.1109/MNET.001.2200163.
-"""
-
 
 def register_builtin_metrics() -> None:
     """Register all built-in metrics with the global registry."""
@@ -151,7 +128,6 @@ def register_builtin_metrics() -> None:
         THROUGHPUT_METRIC,
         TIME_TO_SERVE_METRIC,
         BELL_PAIR_UTILIZATION_METRIC,
-        DELIVERY_FIDELITY_VIOLATION_RATE_METRIC,
     ]
 
     for metric in BUILTIN_METRICS:
