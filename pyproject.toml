@@ -115,19 +115,28 @@ variable_start_string = "{{"
 variable_end_string = "}}"
 comment_start_string = "{#"
 comment_end_string = "#}"
-trim_blocks = false
-lstrip_blocks = false
+trim_blocks = true
+lstrip_blocks = true
 newline_sequence = "\n"
-keep_trailing_newline = false
+keep_trailing_newline = true
 extensions = []
 autoescape = false
 
 [tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
-other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]
-allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", "refactor", "test"]
+patch_tags = [
+    "fix",
+    "docs",
+    "test",
+    "ci",
+    "refactor",
+    "perf",
+    "chore",
+    "revert",
+]
+allowed_tags = ["feat", "fix", "perf", "build", "ci", "docs", "style", "refactor", "test"]
+other_allowed_tags = ["chore"]
+
 default_bump_level = 0
 parse_squash_commits = true
 ignore_merge_commits = true
-

@@ -317,7 +317,7 @@ The arguments for our `add_ep_rules` function will be similar to our previous fu
 - `target_fidelity`, the fidelity of entanglement we wish to achieve.
 
 ```python
-from sequence.entanglement_management.purification import BBPSSWProtocol
+from sequence.entanglement_management.purification import PurificationProtocol
 
 def ep_rule_condition_request(memory_info: "MemoryInfo", manager: "MemoryManager", args):
     index_upper = args["index_upper"]
@@ -342,7 +342,7 @@ def ep_match_func(protocols, args):
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, BBPSSWProtocol):
+        if not isinstance(protocol, PurificationProtocol):
             continue
 
         if protocol.kept_memo.name == remote1:
@@ -367,7 +367,7 @@ def ep_match_func(protocols, args):
 def ep_rule_action_request(memories_info: List["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = BBPSSWProtocol.create(None, name, memories[0], memories[1])
+    protocol = PurificationProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_match_func]
     req_args = {"remote1": memories_info[0].remote_memo,
@@ -388,7 +388,7 @@ def ep_rule_condition_await(memory_info: "MemoryInfo", manager: "MemoryManager",
 def ep_rule_action_await(memories_info: List["MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % (memories[0].name)
-    protocol = BBPSSWProtocol.create(None, name, memories[0], None)
+    protocol = PurificationProtocol.create(None, name, memories[0], None)
     return [protocol, [None], [None], [None]]
 
 

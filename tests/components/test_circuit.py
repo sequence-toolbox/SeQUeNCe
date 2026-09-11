@@ -1,7 +1,7 @@
 import numpy as np
-from math import sqrt
 
 from sequence.components.circuit import Circuit
+from sequence.constants import SQRT_HALF
 from numpy import array, array_equal, identity
 from pytest import raises
 
@@ -98,28 +98,28 @@ def test_sdg():
 def test_root_iZ():
     circuit = Circuit(1)
     circuit.root_iZ(0)
-    expect = 1/sqrt(2)*array([[complex(1, 1), 0], [0, complex(1, -1)]])
+    expect = SQRT_HALF * array([[complex(1, 1), 0], [0, complex(1, -1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_minus_root_iZ():
     circuit = Circuit(1)
     circuit.minus_root_iZ(0)
-    expect = 1/sqrt(2)*array([[complex(1, -1), 0], [0, complex(1, 1)]])
+    expect = SQRT_HALF * array([[complex(1, -1), 0], [0, complex(1, 1)]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_root_iY():
     circuit = Circuit(1)
     circuit.root_iY(0)
-    expect = 1/sqrt(2)*array([[1, 1], [-1, 1]])
+    expect = SQRT_HALF * array([[1, 1], [-1, 1]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 
 def test_minus_root_iY():
     circuit = Circuit(1)
     circuit.minus_root_iY(0)
-    expect = 1/sqrt(2)*array([[1, -1], [1, 1]])
+    expect = SQRT_HALF * array([[1, -1], [1, 1]])
     assert array_equal(expect, circuit.get_unitary_matrix())
 
 

@@ -18,10 +18,11 @@ if TYPE_CHECKING:
 from ...constants import BELL_DIAGONAL_STATE_FORMALISM
 from ...utils import log, metrics
 from ...utils.metrics.event_types import EventTypes
-from .bbpssw_protocol import BBPSSWProtocol, BBPSSWMessage, BBPSSWMsgType
+from .purification_protocol import PurificationProtocol, BBPSSWMessage, BBPSSWMsgType
 
-@BBPSSWProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
-class BBPSSW_BDS(BBPSSWProtocol):
+
+@PurificationProtocol.register(BELL_DIAGONAL_STATE_FORMALISM)
+class BBPSSW_BDS(PurificationProtocol):
     """Purification protocol instance.
 
     This class provides an implementation of the BBPSSW purification protocol.
@@ -37,10 +38,9 @@ class BBPSSW_BDS(BBPSSWProtocol):
         remote_node_name (str): name of other node.
         remote_protocol_name (str): name of other protocol.
         remote_memories (list[str]): name of remote memories.
-        is_twirled (bool): whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
     """
 
-    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, is_twirled=True):
+    def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory):
         """Constructor for purification protocol.
 
         args:
@@ -48,11 +48,9 @@ class BBPSSW_BDS(BBPSSWProtocol):
             name (str): Name of protocol instance.
             kept_memo (Memory): Memory to keep and improve the fidelity.
             meas_memo (Memory): Memory to measure and discard.
-            is_twirled (bool): Whether we twirl the input and output BDS. True: BBPSSW, False: DEJMPS. (default True)
         """
         super().__init__(owner, name, kept_memo, meas_memo)
 
-        self.is_twirled = is_twirled
         self.ep_matched = False
         self.protocol_type = 'bbpssw_bds'
 
@@ -60,6 +58,23 @@ class BBPSSW_BDS(BBPSSWProtocol):
         """Method to start entanglement purification.
 
         Run the circuit below on two pairs of entangled memories on both sides of protocol. (Original implementation)
+
+        1) Invoke single-memory decoherence channels, i.e., bds_decohere(), on each involved quantum memory (in total 4)
+        purification will use the updated BDS as input. The bds_decohere() method will also update the last_update_time 
+        of quantum memories. In this case it will be the time when purification is initiated, thus allowing correct 
+        accounting of idling decoherence
+
+        2) Update the BDS with purification_res()
+        
+        3) Use following trick to determine if the measurement results on both sides equal:
+           We consider that both sides do a biased coin flip,
+           with head (getting 1) probability p, and tail (getting 0) probability 1-p.
+           If we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
+           to simulate a correct success probability we require p^2 + (1-p)^2 = q,
+           where q is the real success probability of purification.
+           As we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2),
+           both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1);
+           We choose p = (1 + \sqrt{2q-1})/2
 
         Side Effects:
             May update parameters of kept memory.
@@ -71,25 +86,11 @@ class BBPSSW_BDS(BBPSSWProtocol):
         remote_kept_memo: Memory = remote_memos[0]
         remote_meas_memo: Memory = remote_memos[1]
 
-        # first invoke single-memory decoherence channels on each involved quantum memory (in total 4)
-        # purification will use the updated BDS as input, and also update the BDS with purification_res
-        # the bds_decohere() method will also update the last_update_time of quantum memories
-        # in this case it will be the time when purification is initiated, thus allowing correct accounting of idling decoherence
-
+        # Invoke single-memory decoherence channels
         self.meas_memo.bds_decohere()
         remote_meas_memo.bds_decohere()
         self.kept_memo.bds_decohere()
         remote_kept_memo.bds_decohere()
-
-        # use following trick to determine if the measurement results on both sides equal:
-        # We consider that both sides do a biased coin flip,
-        # with head (getting 1) probability p, and tail (getting 0) probability 1-p.
-        # If we assume that when both sides have 1 or 0 the event corresponds to a successful purification,
-        # to simulate a correct success probability we require p^2 + (1-p)^2 = q,
-        # where q is the real success probability of purification.
-        # As we have proved that the success probability is above 1/2 (for both states with fidelity >= 1/2),
-        # both solutions to the equation, i.e. p = (1 \pm \sqrt{2q-1})/2, are valid (between 0 and 1);
-        # We choose p = (1 + \sqrt{2q-1})/2
 
         # calculate correct success probability (q).
         # Also determine BDS density matrix elements of kept entangled pair conditioned on successful purification,
@@ -102,16 +103,14 @@ class BBPSSW_BDS(BBPSSWProtocol):
         else:
             self.meas_res = 0
 
-        # TODO: the entangle_time attribute of MemoryInfo should be the time when the purification is started,
-        #  not the time when purification result is determined (after CC)
-
         # modify entangled state of kept pair
         if self.owner.name > self.remote_node_name:  # avoid both ends setting memory state
             keys = [self.kept_memo.qstate_key, remote_kept_memo.qstate_key]
             self.owner.timeline.quantum_manager.set(keys, new_bds)
 
         log.logger.debug(f'Starting BBPSSW from {self.owner} to {self.remote_node_name}')
-        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, meas_res=self.meas_res, protocol_type=self.protocol_type)
+        message = BBPSSWMessage(BBPSSWMsgType.PURIFICATION_RES, self.remote_protocol_name, 
+                                meas_res=self.meas_res, protocol_type=self.protocol_type)
         self.owner.send_message(self.remote_node_name, message)
 
     def received_message(self, src: str, msg: BBPSSWMessage) -> None:
@@ -138,12 +137,8 @@ class BBPSSW_BDS(BBPSSWProtocol):
                 remote_kept_memory.bds_decohere()
                 self.kept_memo.bds_decohere()
                 self.kept_memo.fidelity = self.kept_memo.get_bds_fidelity()
-                metrics.record(
-                    EventTypes.EP_SUCCESS,
-                    self.owner.name,
-                    remote_node=self.remote_node_name,
-                    fidelity=self.kept_memo.fidelity,
-                )
+                metrics.record(EventTypes.EP_SUCCESS, self.owner.name, 
+                               remote_node=self.remote_node_name, fidelity=self.kept_memo.fidelity)
                 self.update_resource_manager(self.kept_memo, state="PURIFIED")
             else:
                 log.logger.info(f'Purification failed because measure results: {self.meas_res}, {msg.meas_res}')
@@ -154,91 +149,57 @@ class BBPSSW_BDS(BBPSSWProtocol):
             raise Exception(f'{msg.msg_type} unknown')
 
     def purification_res(self) -> tuple[float, npt.NDArray]:
-        """Method to calculate the correct success probability of a purification trial with BDS input.
+        """Calculate the success probability and output fidelity for BBPSSW purification.
 
-        The four BDS density matrix elements of kept entangled pair conditioned on successful purification.
+        This implements Eqs. (8) and (9) from "Entanglement Distribution in Quantum Repeater with
+        Purification and Optimized Buffer Time": https://arxiv.org/abs/2305.14573.
+
+        The paper assumes identical hardware at both nodes. Here, p1 and eta1 describe the owner node,
+        while p2 and eta2 describe the remote node.
 
         Returns:
-            tuple[float, np.array]: success probability and BDS density matrix elements of kept entangled pair.
+            The purification success probability and the Bell-diagonal state of the retained pair.
         """
 
-        assert self.owner.timeline.quantum_manager.get_active_formalism() == BELL_DIAGONAL_STATE_FORMALISM, (
-            "Input states should be Bell diagonal states.")
+        assert (self.owner.timeline.quantum_manager.get_active_formalism()
+                == BELL_DIAGONAL_STATE_FORMALISM), "Input states should be Bell diagonal states."
 
         kept_input_state = self.owner.timeline.quantum_manager.get(self.kept_memo.qstate_key)
         meas_input_state = self.owner.timeline.quantum_manager.get(self.meas_memo.qstate_key)
 
-        own_node, remote_node = self.owner, self.owner.timeline.get_entity_by_name(self.remote_node_name)
+        own_node = self.owner
+        remote_node = self.owner.timeline.get_entity_by_name(self.remote_node_name)
 
-        # gate and measurement fidelities on protocol owner node
-        own_node_gate_fid, own_node_meas_fid = own_node.gate_fid, own_node.meas_fid
-        # gate and measurement fidelities on remote node
-        remote_node_gate_fid, remote_node_meas_fid = remote_node.gate_fid, remote_node.meas_fid
+        # p1 and p2: probabilities that the owner and remote nodes implement their local CNOT gates perfectly.
+        p1 = own_node.gate_fid
+        p2 = remote_node.gate_fid
+        # eta1 and eta2: probabilities that the owner and remote nodes report the correct measurement result.
+        eta1 = own_node.meas_fid
+        eta2 = remote_node.meas_fid
+        assert p1 * p2 > 0, "The uncancelled expression in Eq. (9) requires nonzero gate fidelities."
 
-        if self.is_twirled:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state[0], (1 - kept_input_state.state[
-                0]) / 3, (1 - kept_input_state.state[0]) / 3, (1 - kept_input_state.state[
-                0]) / 3  # Diagonal elements of kept pair (twirled)
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state[0], (1 - meas_input_state.state[
-                0]) / 3, (1 - meas_input_state.state[0]) / 3, (1 - meas_input_state.state[
-                0]) / 3  # Diagonal elements of measured pair (twirled)
-        else:
-            kept_elem_1, kept_elem_2, kept_elem_3, kept_elem_4 = kept_input_state.state  # Diagonal elements of kept pair
-            meas_elem_1, meas_elem_2, meas_elem_3, meas_elem_4 = meas_input_state.state  # Diagonal elements of measured pair
+        # F1 and F2: Phi+ fidelities of the retained and measured input pairs, respectively.
+        F1 = kept_input_state.state[0]
+        F2 = meas_input_state.state[0]
+        # e1 and e2: equal weights of each of the other three Bell states after twirling.
+        e1 = (1 - F1) / 3
+        e2 = (1 - F2) / 3
 
-        # assert 1. >= kept_elem_1 >= 0.5 and 1. >= meas_elem_1 >= 0.5, "Input states should have fidelity above 1/2."
-        a, b = (kept_elem_1 + kept_elem_2), (meas_elem_1 + meas_elem_2)
+        # p_s_w: purification success probability for Werner-state inputs (Eq. 8).
+        p_s_w = (
+            p1 * p2 * (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + F1 * e2 + e1 * F2 + 5 * e1 * e2)
+          + p1 * p2 * (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (2 * F1 * e2 + 2 * e1 * F2 + 4 * e1 * e2)
+          + (1 - p1 * p2) / 2 )
 
-        # calculate success probability with analytical formula
-        p_succ = 1 / 2 \
-                 + own_node_gate_fid * remote_node_gate_fid \
-                 * (own_node_meas_fid * (1 - remote_node_meas_fid) + (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 + own_node_gate_fid * remote_node_gate_fid * (a * b + (1 - a) * (1 - b)) \
-                 * (own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (1 - remote_node_meas_fid)
-                    - own_node_meas_fid * (1 - remote_node_meas_fid) - (1 - own_node_meas_fid) * remote_node_meas_fid) \
-                 - own_node_gate_fid * remote_node_gate_fid / 2
+        # F_s_w: Phi+ fidelity of the retained pair conditioned on purification success (Eq. 9).
+        F_s_w_numerator = (
+            (eta1 * eta2 + (1 - eta1) * (1 - eta2)) * (F1 * F2 + e1 * e2)
+          + (eta1 * (1 - eta2) + (1 - eta1) * eta2) * (F1 * e2 + e1 * e2)
+          + (1 - p1 * p2) / (8 * p1 * p2) )
+        
+        F_s_w = F_s_w_numerator / (p_s_w / (p1 * p2))
 
-        # calculate the BDS elements
-        new_elem_1 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_1 + kept_elem_2 * meas_elem_2)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_3 + kept_elem_2 * meas_elem_4)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
+        bds_elems = np.array([F_s_w, (1 - F_s_w) / 3, (1 - F_s_w) / 3, (1 - F_s_w) / 3])
+        log.logger.debug(f"{self.name}, before: f={F1:.6f}, {F2:.6f}; after: f={F_s_w:.6f}")
 
-        new_elem_2 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_1 * meas_elem_2 + kept_elem_2 * meas_elem_1)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_1 * meas_elem_4 + kept_elem_2 * meas_elem_3)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        new_elem_3 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_3 + kept_elem_4 * meas_elem_4)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_1 + kept_elem_4 * meas_elem_2)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        new_elem_4 = own_node_gate_fid * remote_node_gate_fid \
-                     * ((own_node_meas_fid * remote_node_meas_fid + (1 - own_node_meas_fid) * (
-                1 - remote_node_meas_fid)) * (kept_elem_3 * meas_elem_4 + kept_elem_4 * meas_elem_3)
-                        + (own_node_meas_fid * (1 - remote_node_meas_fid) + (
-                        1 - own_node_meas_fid) * remote_node_meas_fid) * (
-                                kept_elem_3 * meas_elem_2 + kept_elem_4 * meas_elem_1)) \
-                     + (1 - own_node_gate_fid * remote_node_gate_fid) / 8
-
-        if self.is_twirled:
-            new_fid = new_elem_1 / p_succ  # normalization by success probability
-            bds_elems = np.array([new_fid, (1 - new_fid) / 3, (1 - new_fid) / 3, (1 - new_fid) / 3])
-        else:
-            bds_elems = np.array([new_elem_1, new_elem_2, new_elem_3, new_elem_4])
-            bds_elems = bds_elems / p_succ  # normalization by success probability
-
-        log.logger.debug(
-            f"{self.name}, before: f = {kept_elem_1:.6f}, {meas_elem_1:.6f}; after: f = {bds_elems[0]:.6f}")
-
-        return p_succ, bds_elems
+        return p_s_w, bds_elems

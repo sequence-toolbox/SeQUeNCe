@@ -1,4 +1,4 @@
-"""Base class for BBPSSW entanglement purification protocol.
+"""Base classes and messages for 2-to-1 entanglement purification protocols.
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -41,8 +41,14 @@ class BBPSSWMessage(Message):
         return f"\"BBPSSW: type={self.msg_type}, meas_res={self.meas_res}\""
 
 
-class BBPSSWProtocol(EntanglementProtocol, ABC):
-    _registry: dict[str, type['BBPSSWProtocol']] = {}
+class PurificationProtocol(EntanglementProtocol, ABC):
+    """Base class for 2-to-1 entanglement purification protocols.
+
+    A 2-to-1 purification protocol consumes two entangled memory pairs,
+    keeps at most one pair, and measures/discards the other pair.
+    Concrete subclasses provide the protocol-specific purification behavior.
+    """
+    _registry: dict[str, type['PurificationProtocol']] = {}
     _global_formalism: str = KET_VECTOR_FORMALISM
 
     def __init__(self, owner: Node, name: str, kept_memo: Memory, meas_memo: Memory, **kwargs):
@@ -55,7 +61,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             meas_memo (Memory): Memory to measure and discard.
         """
         assert kept_memo != meas_memo
-        super().__init__(owner, name, 'bbpssw')
+        super().__init__(owner, name, 'purification')
         self.memories: list[Memory] = [kept_memo, meas_memo]
         self.kept_memo: Memory = kept_memo
         self.meas_memo: Memory = meas_memo
@@ -68,7 +74,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     @classmethod
     def get_formalism(cls) -> str:
-        """Get the global formalism used by BBPSSW protocols.
+        """Get the global protocol selector used by purification protocols.
 
         Returns:
             The global formalism used by BBPSSW protocols.
@@ -77,7 +83,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     @classmethod
     def set_formalism(cls, formalism: str) -> None:
-        """Set the global formalism used by BBPSSW protocols.
+        """Set the global protocol selector used by purification protocols.
 
         Valid Built-formalisms:
             1. Bell Diagonal -> bds
@@ -88,15 +94,16 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         cls._global_formalism = formalism
 
     @classmethod
-    def register(cls, name: str, protocol_class: type['BBPSSWProtocol'] | None = None) -> Callable[[type['BBPSSWProtocol']], type['BBPSSWProtocol']] | None:
-        """Register a BBPSSW protocol class. Can be used as a decorator or as a normal function.
+    def register(cls, name: str, protocol_class: type['PurificationProtocol'] | None = None
+                 ) -> Callable[[type['PurificationProtocol']], type['PurificationProtocol']] | None:
+        """Register a 2-to-1 purification protocol class. Can be used as a decorator or as a normal function.
 
         Recommended Usage: Use a decorator to register a BBPSSW protocol class on the user side.
         Use as a direct call on the backend.
 
         Args:
             name (str): Name of the protocol to register.
-            protocol_class (type[BBPSSWProtocol], optional): The protocol class to register
+            protocol_class (type[PurificationProtocol], optional): The protocol class to register
 
         Returns:
             If used as a decorator, returns the decorator function.
@@ -104,16 +111,16 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
         Examples:
             # Using as a decorator
-            @BBPSSWProtocol.register('new_fancy_bbpssw')
-            class NewFancyBBPSSW(BBPSSWProtocol):
+            @PurificationProtocol.register('new_fancy_bbpssw')
+            class NewFancyBBPSSW(PurificationProtocol):
                 pass
                 ...
 
             # Using as a direct call
-            class AnotherFancyBBPSSW(BBPSSWProtocol):
+            class AnotherFancyBBPSSW(PurificationProtocol):
                 pass
                 ...
-            BBPSSWProtocol.register('another_fancy_bbpssw', AnotherFancyBBPSSW)
+            PurificationProtocol.register('another_fancy_bbpssw', AnotherFancyBBPSSW)
         """
         if name in cls._registry:
             raise ValueError(f"'{name}' is already registered.")
@@ -122,7 +129,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
             cls._registry[name] = protocol_class
             return None
 
-        def decorator(protocol_cls: type['BBPSSWProtocol']) -> type['BBPSSWProtocol']:
+        def decorator(protocol_cls: type['PurificationProtocol']) -> type['PurificationProtocol']:
             if name in cls._registry:
                 raise ValueError(f"'{name}' is already registered.")
             cls._registry[name] = protocol_cls
@@ -132,8 +139,8 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     @classmethod
     def create(cls, owner: "Node", name: str, kept_memo: "Memory", meas_memo: "Memory",
-               **kwargs) -> 'BBPSSWProtocol':
-        """Create an instance of a registered BBPSSW protocol.
+               **kwargs) -> 'PurificationProtocol':
+        """Create an instance of a registered 2-to-1 purification protocol.
 
         Args:
             owner (Node): Node the protocol is attached to.
@@ -144,7 +151,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
         Returns:
             An instance of the requested BBPSSW protocol class.
         """
-        protocol_name: str = BBPSSWProtocol.get_formalism()
+        protocol_name: str = cls.get_formalism()
         try:
             protocol_class = cls._registry[protocol_name]
             return protocol_class(owner, name, kept_memo, meas_memo, **kwargs)
@@ -153,7 +160,7 @@ class BBPSSWProtocol(EntanglementProtocol, ABC):
 
     @classmethod
     def list_protocols(cls) -> list[str]:
-        """List all registered BBPSSW protocols."""
+        """List all registered 2-to-1 purification protocols."""
         return list(cls._registry.keys())
 
     @classmethod

@@ -253,7 +253,7 @@ We will also rewrite the code for the manager class to reflect our usage of two 
 
 
 ```python
-from sequence.entanglement_management.purification import BBPSSWProtocol
+from sequence.entanglement_management.purification import PurificationProtocol
 
 
 class SimpleManager:
@@ -274,7 +274,7 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [BBPSSWProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [PurificationProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
 class PurifyNode(Node):
@@ -293,14 +293,14 @@ class PurifyNode(Node):
         self.protocols[0].received_message(src, msg)
 ```
 
-The `create` function of `BBPSSWProtocol` requires four arguments:
+The `create` function of `PurificationProtocol` requires four arguments:
 
 1. The node that holds the protocol instance
 2. The identity of the protocol instance
 3. The memory used as the `kept_memo`
 4. the memory used as the `meas_memo`
 
-By default, `BBPSSWProtocol` will create a `BBPSSWCircuit` instance.
+By default, `PurificationProtocol` will create a `BBPSSWCircuit` instance.
 
 ### Step 2: Create Network
 

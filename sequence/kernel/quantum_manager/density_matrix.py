@@ -3,25 +3,25 @@ This module implements the quantum manager for density matrix states.
 """
 from __future__ import annotations
 
-from .base import QuantumManager, QuantumManagerDenseQubit
+from .base import QuantumManager
+from .utils import swap_qubits, validate_circuit_run
 from ..quantum_state import DensityState, OneDimensionInput, TwoDimensionInput
-from ..quantum_utils import measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, measure_state_with_cache_density
+from ..quantum_utils import (measure_entangled_state_with_cache_density, measure_multiple_with_cache_density, 
+                             measure_state_with_cache_density)
 from ...constants import DENSITY_MATRIX_FORMALISM
 
-from numpy import array
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ...components.circuit import Circuit
+import numpy as np
+from ...components.circuit import Circuit
 
 
 @QuantumManager.register(DENSITY_MATRIX_FORMALISM)
-class QuantumManagerDensity(QuantumManagerDenseQubit):
+class QuantumManagerDensity(QuantumManager):
     """Class to track and manage states with the density matrix formalism."""
 
     def __init__(self):
         super().__init__()
 
-    def new( self, state: OneDimensionInput | TwoDimensionInput = ((complex(1), complex(0)), (complex(0), complex(0)))) -> int:
+    def new(self, state: OneDimensionInput | TwoDimensionInput = ((1 + 0j, 0j), (0j, 0j))) -> int:
         """Method to create a new density matrix state.
         
         Args:
@@ -37,7 +37,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
 
     def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
         """Method to run a circuit on a given list of keys.
-        
+
         Args:
             circuit (Circuit): quantum circuit to apply.
             keys (list[int]): list of keys to apply circuit to.
@@ -47,7 +47,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             If measurement, dict[int, int]: dictionary mapping qstate keys to measurement results.
             If non-measurement, dict: empty dictionary.
         """
-        self._validate_circuit_run(circuit, keys, meas_samp)
+        validate_circuit_run(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
         new_state = circ_mat @ new_state @ circ_mat.conj().T
@@ -62,6 +62,46 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
             return self._measure(new_state, keys, all_keys, meas_samp)
+
+    def _prepare_circuit(self, circuit: Circuit, keys: list[int]) -> tuple[np.ndarray, list[int], np.ndarray]:
+        """Prepare state and circuit matrices for dense-qubit execution.
+
+        Args:
+            circuit (Circuit): quantum circuit to apply.
+            keys (list[int]): list of keys for quantum states to apply circuit to.
+
+        Returns:
+            tuple: tuple containing the new state, all keys, and the circuit matrix.
+                   Note: the returned circuit matrix contains any necessary swaps to align qubits of new state
+        """
+        old_states = []
+        all_keys = []
+
+        # go through keys and get all unique qstate objects
+        for key in keys:
+            qstate = self.states[key]
+            if qstate.keys[0] not in all_keys:
+                old_states.append(qstate.state)
+                all_keys += qstate.keys
+
+        # construct compound state; order qubits
+        new_state = [1]
+        for state in old_states:
+            new_state = np.kron(new_state, state)
+
+        # get circuit matrix; expand if necessary
+        circ_mat = circuit.get_unitary_matrix()
+        if circuit.size < len(all_keys):
+            # pad size of circuit matrix if necessary
+            diff = len(all_keys) - circuit.size
+            circ_mat = np.kron(circ_mat, np.identity(2 ** diff))
+
+        # apply any necessary swaps
+        if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
+            all_keys, swap_mat = swap_qubits(all_keys, keys)
+            circ_mat = circ_mat @ swap_mat
+
+        return new_state, all_keys, circ_mat
 
     def set(self, keys: list[int], state: OneDimensionInput | TwoDimensionInput) -> None:
         """Method to set the quantum state at the given keys.
@@ -115,7 +155,7 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
         """
         target_all_keys = sorted(state.keys)
         if state.keys != target_all_keys:
-            _, swap_matrix = self._swap_qubits(state.keys, target_all_keys)
+            _, swap_matrix = swap_qubits(state.keys, target_all_keys)
             reordered_state = swap_matrix @ state.state @ swap_matrix.conj().T
             state.state = reordered_state
             self.set(target_all_keys, reordered_state.tolist())
@@ -152,16 +192,16 @@ class QuantumManagerDensity(QuantumManagerDenseQubit):
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 = measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
-                    new_state = array(state_0, dtype=complex)
+                    new_state = np.array(state_0, dtype=complex)
                     result = 0
                 else:
-                    new_state = array(state_1, dtype=complex)
+                    new_state = np.array(state_1, dtype=complex)
                     result = 1
 
         else:
             # swap states into correct position
             if not all([all_keys.index(key) == i for i, key in enumerate(keys)]):
-                all_keys, swap_mat = self._swap_qubits(all_keys, keys)
+                all_keys, swap_mat = swap_qubits(all_keys, keys)
                 state = swap_mat @ state @ swap_mat.conj().T
 
             # calculate meas probabilities and projected states

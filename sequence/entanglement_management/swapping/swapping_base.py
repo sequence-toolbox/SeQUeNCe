@@ -129,7 +129,8 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
         Args:
             name (str): name of the specific type of Entanglement Swapping A protocol.
-            protocol_class (type[EntanglementSwappingA] | None): the class of the specific type of Entanglement Swapping A protocol. If None, the decorated class will be registered.
+            protocol_class (type[EntanglementSwappingA] | None): the class of the specific type of Entanglement 
+                                                Swapping A protocol. If None, the decorated class will be registered.
 
         Returns:
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
@@ -195,6 +196,10 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
     
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
+
+        Note:
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility.
 
         Args:
             protocol (str): other protocol name.
@@ -319,7 +324,8 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
         Args:
             name (str): name of the specific type of Entanglement Swapping B protocol.
-            protocol_class (type[EntanglementSwappingB] | None): the class of the specific type of Entanglement Swapping B protocol. If None, the decorated class will be registered.
+            protocol_class (type[EntanglementSwappingB] | None): the class of the specific type of 
+                                Entanglement Swapping B protocol. If None, the decorated class will be registered.
 
         Returns:
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
@@ -354,6 +360,10 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
+
+        Note:
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility.
 
         Args:
             protocol (str): other protocol name.

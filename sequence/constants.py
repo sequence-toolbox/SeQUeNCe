@@ -43,6 +43,9 @@ MILLISECOND: Final = 10**9
 #: Number of picoseconds in one second.
 SECOND:      Final = 10**12
 
+
+# Formalism #
+
 #: Built-in ket-vector formalism identifier.
 KET_VECTOR_FORMALISM: Final = "ket_vector"
 #: Built-in density-matrix formalism identifier.
@@ -54,7 +57,12 @@ BELL_DIAGONAL_STATE_FORMALISM: Final = "bell_diagonal"
 #: Built-in stabilizer-state formalism identifier.
 STABILIZER_FORMALISM: Final = "stabilizer"
 
+
+# Protocol Type #
+
 #: Built-in Barrett-Kok generation protocol identifier.
 BARRET_KOK: Final = 'barret_kok'
 #: Built-in single-heralded generation protocol identifier.
 SINGLE_HERALDED: Final = 'single_heralded'
+#: Built-in DEJMPS Bell-diagonal-state purification protocol identifier.
+DEJMPS: Final = "dejmps_bds"
