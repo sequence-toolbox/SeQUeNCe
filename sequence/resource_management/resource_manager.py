@@ -515,12 +515,7 @@ class ResourceManager:
             reservation = getattr(app, "memo_to_reservation", {}).get(memo_info.index)
             if reservation is not None:
                 identity = reservation.identity
-        metrics.record(
-            EventTypes.MEMORY_EXPIRED,
-            self.owner.name,
-            memory_index=memo_info.index,
-            identity=identity,
-        )
+        metrics.record(EventTypes.MEMORY_EXPIRED, self.owner.name, memory_index=memo_info.index, identity=identity)
         self.update(None, memory, MemoryInfo.RAW)
 
     def release_remote_protocol(self, dst: str, protocol: str) -> None:

@@ -139,28 +139,16 @@ class RequestApp(App):
             valid_fidelity = info.fidelity >= reservation.fidelity
             if info.remote_node == reservation.initiator and valid_fidelity:
                 self.node.resource_manager.update(None, info.memory, "RAW")
-                metrics.record(
-                    EventTypes.DELIVERY,
-                    self.node.name,
-                    fidelity=info.fidelity,
-                    **reservation)
+                metrics.record(EventTypes.DELIVERY, self.node.name, fidelity=info.fidelity, **reservation)
             elif info.remote_node == reservation.responder and valid_fidelity:
                 self.memory_counter += 1
                 log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
                 self.node.resource_manager.update(None, info.memory, "RAW")
-            metrics.record(
-                EventTypes.DELIVERY,
-                self.node.name,
-                fidelity=info.fidelity,
-                **reservation,
+                metrics.record(EventTypes.DELIVERY, self.node.name, fidelity=info.fidelity, **reservation)
 
-            )
     def get_throughput(self) -> float:
-        warnings.warn(
-            "get_throughput is deprecated and will be removed in a future release, use THROUGHPUT_METRIC from the metrics module instead",
-            category=FutureWarning,
-            stacklevel=2,
-        )
+        warnings.warn("get_throughput is deprecated and will be removed in a future release, "
+                      "use THROUGHPUT_METRIC from the metrics module instead", category=FutureWarning, stacklevel=2)
         return self.memory_counter / (self.end_t - self.start_t) * 1e12
 
 

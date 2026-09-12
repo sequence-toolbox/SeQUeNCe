@@ -88,9 +88,4 @@ class EntanglementProtocol(Protocol):
         identity = None
         if self.rule is not None and self.rule.reservation is not None:
             identity = self.rule.reservation.identity
-        metrics.record(
-            EventTypes.MEMORY_EXPIRED,
-            self.owner.name,
-            memory_index=memo_info.index,
-            identity=identity,
-        )
+        metrics.record(EventTypes.MEMORY_EXPIRED, self.owner.name, memory_index=memo_info.index, identity=identity)
