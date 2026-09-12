@@ -165,6 +165,23 @@ class ReservationHopRejectData:
     path_so_far: list[str]
 
 
+@dataclass(frozen=True, slots=True)
+class MemoryUpdateData:
+    """Payload for a memory-state update event used for occupancy metrics."""
+
+    occupied_count: int
+    entangled_count: int
+    purified_count: int
+    total_memories: int
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryExpiredData:
+    """Payload for a memory decoherence/expiry event."""
+
+    memory_index: int
+    identity: int | None = None
+
 class EventTypes:
     """Namespace for built-in simulation event types."""
 
@@ -181,6 +198,10 @@ class EventTypes:
     RESERVATION_REJECTED = register_event_type("RESERVATION_REJECTED", ReservationRejectedData)
     RESERVATION_REQUESTED = register_event_type("RESERVATION_REQUESTED", ReservationRequestedData)
     RESERVATION_HOP_REJECT = register_event_type("RESERVATION_HOP_REJECT", ReservationHopRejectData)
+
+    # Resource Management Events #
+    MEMORY_UPDATE = register_event_type("MEMORY_UPDATE", MemoryUpdateData)
+    MEMORY_EXPIRED = register_event_type("MEMORY_EXPIRED", MemoryExpiredData)
 
     # Application Events #
     DELIVERY = register_event_type("DELIVERY", DeliveryData)

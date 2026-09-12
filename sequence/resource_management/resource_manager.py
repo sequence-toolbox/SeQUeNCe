@@ -34,7 +34,8 @@ from .rule_manager import Rule, Arguments
 
 from ..entanglement_management.entanglement_protocol import EntanglementProtocol
 from ..message import Message
-from ..utils import log
+from ..utils import log, metrics
+from ..utils.metrics.event_types import EventTypes
 from .rule_manager import RuleManager
 from .memory_manager import MemoryManager, MemoryInfo
 from ..network_management.reservation import Reservation
@@ -367,9 +368,32 @@ class ResourceManager:
                 rule.do(memories_info)
                 for info in memories_info:
                     info.to_occupied()
+                self._record_memory_update()
                 return
 
         self.owner.get_idle_memory(memo_info)  # no new rules apply to this memory, thus "idle"
+        self._record_memory_update()
+
+    def _record_memory_update(self) -> None:
+        """Record MEMORY_UPDATE with current per-state memory counts."""
+        occupied_count = 0
+        entangled_count = 0
+        purified_count = 0
+        for info in self.memory_manager:
+            if info.state == MemoryInfo.OCCUPIED:
+                occupied_count += 1
+            elif info.state == MemoryInfo.ENTANGLED:
+                entangled_count += 1
+            elif info.state == MemoryInfo.PURIFIED:
+                purified_count += 1
+        metrics.record(
+            EventTypes.MEMORY_UPDATE,
+            self.owner.name,
+            occupied_count=occupied_count,
+            entangled_count=entangled_count,
+            purified_count=purified_count,
+            total_memories=len(self.memory_manager),
+        )
 
     def get_memory_manager(self) -> MemoryManager:
         assert self.memory_manager is not None
@@ -484,7 +508,14 @@ class ResourceManager:
 
     def memory_expire(self, memory: Memory):
         """Method to receive memory expiration events."""
-
+        memo_info = self.memory_manager.get_info_by_memory(memory)
+        identity = None
+        app = getattr(self.owner, "app", None)
+        if app is not None:
+            reservation = getattr(app, "memo_to_reservation", {}).get(memo_info.index)
+            if reservation is not None:
+                identity = reservation.identity
+        metrics.record(EventTypes.MEMORY_EXPIRED, self.owner.name, memory_index=memo_info.index, identity=identity)
         self.update(None, memory, MemoryInfo.RAW)
 
     def release_remote_protocol(self, dst: str, protocol: str) -> None:

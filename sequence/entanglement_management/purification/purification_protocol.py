@@ -229,6 +229,7 @@ class PurificationProtocol(EntanglementProtocol, ABC):
         """
         assert memory in self.memories, f'Memory {memory.name} is not part of this protocol instance.'
 
+        self.record_memory_expired(memory)
         if self.meas_memo is None:
             self.update_resource_manager(memory, 'RAW')
         else:
