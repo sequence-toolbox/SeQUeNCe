@@ -131,13 +131,6 @@ dmypy.json
 # csv files
 *.csv
 
-# vscode-workspace
-sequence_gui_testing.code-workspace
-sequence/gui/.vscode
-
-# gui-testing
-sequence/gui/test_run.py
-
 # macos
 .DS_Store
 

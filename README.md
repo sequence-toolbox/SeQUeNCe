@@ -115,14 +115,6 @@ publisher = {IOP Publishing},
 }
 ```
 
-<!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
-
-## Running the GUI
-Once SeQUeNCe has been installed as described above, run the `gui.py` script found in the root of the project directory
-```
-python gui.py
-```
-
 ## Usage Examples
 Many examples of SeQUeNCe in action can be found in the [example](/example) folder. The example includes jupyter notebook demos, and code used in published papers.
 
