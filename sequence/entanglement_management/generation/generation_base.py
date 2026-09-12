@@ -169,6 +169,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     def memory_expire(self, memory: "Memory") -> None:
         assert memory == self.memory, "Memory to expire does not match the protocol's memory"
+        self.record_memory_expired(memory)
         self.update_resource_manager(memory, MemoryInfo.RAW)
         for event in self.scheduled_events:
             if event.time >= self.owner.timeline.now():

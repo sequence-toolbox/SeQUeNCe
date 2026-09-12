@@ -48,6 +48,21 @@ def _delivery_kwargs(**overrides):
     }
 
 
+def _reservation_outcome_kwargs(**overrides):
+    return {
+        "identity": 1,
+        "initiator": "n1",
+        "responder": "n2",
+        "start_time": int(1e12),
+        "end_time": int(2e12),
+        "memory_size": 5,
+        "entanglement_number": 1,
+        "target_fidelity": 0.9,
+        "path": ["n1", "n2"],
+        **overrides,
+    }
+
+
 @pytest.fixture(autouse=True)
 def reset_metrics_state():
     metrics._enabled = False
@@ -236,13 +251,21 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     timeline = Timeline(int(1e12))
     timeline.time = int(1e12)
     metrics.register_time_provider(timeline)
-    metrics.enable([metrics.DELIVERY_TIME_METRIC, metrics.THROUGHPUT_METRIC])
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC, metrics.THROUGHPUT_METRIC])
 
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right"),
+    )
     timeline.time = int(2e12)
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.91))
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right", fidelity=0.91),
+    )
 
-    trial = metrics.collect_trial_metrics("left", delivery_owner="right")
+    trial = metrics.collect_trial_metrics("left")
 
     assert trial["app_throughput"] == pytest.approx(2.0)
 
@@ -294,7 +317,7 @@ def test_collect_trial_metrics_swapped_fidelities():
 
 
 def test_delivery_does_not_affect_ep_counters():
-    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC])
+    metrics.enable([metrics.EP_METRIC, metrics.TIME_TO_SERVE_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.8))
     metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs(fidelity=0.8))
@@ -304,7 +327,7 @@ def test_delivery_does_not_affect_ep_counters():
     assert ep.failures("right") == 0
 
 
-def test_collect_trial_metrics_ep_fields_and_delivery_time():
+def test_collect_trial_metrics_ep_fields_and_time_to_serve():
     class AdvancingTimeline(Timeline):
         def __init__(self) -> None:
             super().__init__(int(1e12))
@@ -316,7 +339,7 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
             return current
 
     metrics.register_time_provider(AdvancingTimeline())
-    metrics.enable([metrics.EP_METRIC, metrics.DELIVERY_TIME_METRIC, metrics.PURIFIED_FIDELITIES_METRIC, metrics.THROUGHPUT_METRIC])
+    metrics.enable([metrics.EP_METRIC, metrics.TIME_TO_SERVE_METRIC, metrics.PURIFIED_FIDELITIES_METRIC, metrics.THROUGHPUT_METRIC])
 
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.7))
     metrics.record(EventTypes.EP_SUCCESS, "left", **_ep_success_kwargs(fidelity=0.75))
@@ -325,48 +348,46 @@ def test_collect_trial_metrics_ep_fields_and_delivery_time():
         metrics.record(
             EventTypes.DELIVERY,
             "right",
-            **_delivery_kwargs(fidelity=0.7 + i * 0.01),
+            **_delivery_kwargs(
+                initiator="left",
+                responder="right",
+                fidelity=0.7 + i * 0.01,
+                entanglement_number=3,
+            ),
         )
 
-    trial = metrics.collect_trial_metrics(
-        "left",
-        delivery_owner="right",
-        target_pairs=3,
-    )
+    trial = metrics.collect_trial_metrics("left")
 
     assert trial["ep_success"] == 2
     assert trial["purified_fidelities"] == [0.7, 0.75]
-    assert trial["delivery_time"] == pytest.approx(0.4)
+    assert trial["time_to_serve"] == pytest.approx(0.4)
     assert trial["app_throughput"] == pytest.approx(7.5)
 
 
-def test_collect_trial_metrics_delivery_time_nan_when_target_not_reached():
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
-    metrics.record(EventTypes.DELIVERY, "right", **_delivery_kwargs())
-
-    trial = metrics.collect_trial_metrics(
-        "left",
-        delivery_owner="right",
-        target_pairs=500,
-    )
-
-    assert math.isnan(trial["delivery_time"])
-
-
-def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
-    metrics.enable([metrics.DELIVERY_TIME_METRIC])
+def test_collect_trial_metrics_time_to_serve_nan_when_target_not_reached():
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC])
     metrics.record(
         EventTypes.DELIVERY,
         "right",
-        **_delivery_kwargs(start_time=0),
+        **_delivery_kwargs(initiator="left", responder="right", entanglement_number=500),
     )
 
-    trial = metrics.collect_trial_metrics(
+    trial = metrics.collect_trial_metrics("left")
+
+    assert math.isnan(trial["time_to_serve"])
+
+
+def test_collect_trial_metrics_delivery_owner_defaults_to_owner():
+    metrics.enable([metrics.TIME_TO_SERVE_METRIC])
+    metrics.record(
+        EventTypes.DELIVERY,
         "right",
-        target_pairs=1,
+        **_delivery_kwargs(start_time=0, entanglement_number=1),
     )
 
-    assert not math.isnan(trial["delivery_time"])
+    trial = metrics.collect_trial_metrics("right")
+
+    assert not math.isnan(trial["time_to_serve"])
 
 
 def test_aggregate_trial_metrics_computes_avg_and_std():
@@ -433,12 +454,12 @@ def test_aggregate_trial_metrics_flattens_purified_fidelities():
         {
             "ep_success_rate": 0.6,
             "purified_fidelities": [0.7, 0.75],
-            "delivery_time": 10.0,
+            "time_to_serve": 10.0,
         },
         {
             "ep_success_rate": 0.7,
             "purified_fidelities": [0.8],
-            "delivery_time": 9.0,
+            "time_to_serve": 9.0,
         },
     ]
 
@@ -446,19 +467,19 @@ def test_aggregate_trial_metrics_flattens_purified_fidelities():
 
     assert aggregated["avg_purified_fidelities"] == pytest.approx(0.75)
     assert aggregated["std_purified_fidelities"] == pytest.approx(0.05)
-    assert aggregated["avg_delivery_time"] == 9.5
+    assert aggregated["avg_time_to_serve"] == 9.5
 
 
-def test_aggregate_trial_metrics_handles_nan_delivery_time():
+def test_aggregate_trial_metrics_handles_nan_time_to_serve():
     trials = [
-        {"delivery_time": float("nan"), "purified_fidelities": [0.7]},
-        {"delivery_time": 12.0, "purified_fidelities": [0.8]},
+        {"time_to_serve": float("nan"), "purified_fidelities": [0.7]},
+        {"time_to_serve": 12.0, "purified_fidelities": [0.8]},
     ]
 
     aggregated = metrics.aggregate_trial_metrics(trials)
 
-    assert aggregated["avg_delivery_time"] == 12.0
-    assert aggregated["std_delivery_time"] == 0.0
+    assert aggregated["avg_time_to_serve"] == 12.0
+    assert aggregated["std_time_to_serve"] == 0.0
 
 
 def test_register_event_type_is_idempotent():
@@ -499,3 +520,301 @@ def test_register_metric_rejects_duplicate_output_keys():
     )
     with pytest.raises(ValueError, match="already registered"):
         metrics.register_metric(duplicate)
+
+
+def test_bell_pair_utilization_computes_eg_over_deliveries():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "left", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "right", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "mid", **_eg_success_kwargs())
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right"),
+    )
+    metrics.record(
+        EventTypes.DELIVERY,
+        "right",
+        **_delivery_kwargs(initiator="left", responder="right", fidelity=0.91),
+    )
+
+    trial = metrics.collect_trial_metrics("left")
+    # n_b = 4 EG_SUCCESS (all owners), n_s = 2 DELIVERY associated with left
+    assert trial["bell_pair_utilization"] == pytest.approx(4 / 2)
+
+
+def test_bell_pair_utilization_nan_without_deliveries():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs())
+
+    trial = metrics.collect_trial_metrics("e0")
+    assert math.isnan(trial["bell_pair_utilization"])
+
+
+def test_bell_pair_utilization_enable_records_eg_and_delivery():
+    metrics.enable([metrics.BELL_PAIR_UTILIZATION_METRIC])
+
+    metrics.record(EventTypes.EG_SUCCESS, "e0", **_eg_success_kwargs())
+    metrics.record(EventTypes.DELIVERY, "e0", **_delivery_kwargs())
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.EG_SUCCESS,
+        EventTypes.DELIVERY,
+    }
+
+
+def test_admission_rate_computes_approved_over_total():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(EventTypes.RESERVATION_REJECTED, "n0", **_reservation_outcome_kwargs(identity=3, path=[]))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "other", **_reservation_outcome_kwargs(identity=4))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["admission_failures"] == 1
+    assert trial["admission_success"] == 2
+    assert trial["admission_success_rate"] == pytest.approx(2 / 3)
+
+
+def test_admission_rate_zero_without_outcomes():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["admission_failures"] == 0
+    assert trial["admission_success"] == 0
+    assert trial["admission_success_rate"] == 0.0
+
+
+def test_admission_rate_enable_records_approved_and_rejected():
+    metrics.enable([metrics.ADMISSION_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.RESERVATION_REJECTED, "n0", **_reservation_outcome_kwargs(path=[]))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.RESERVATION_REJECTED,
+    }
+
+
+def _memory_update_kwargs(**overrides):
+    return {
+        "occupied_count": 0,
+        "entangled_count": 0,
+        "purified_count": 0,
+        "total_memories": 10,
+        **overrides,
+    }
+
+
+def test_memory_utilization_ratio_time_weighted_average():
+    timeline = Timeline(int(1e12))
+    timeline.time = 0
+    metrics.register_time_provider(timeline)
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    # t=0..100: 2/10 busy; t=100..300: 5/10 busy; collect at t=300
+    timeline.time = 0
+    metrics.record(
+        EventTypes.MEMORY_UPDATE,
+        "n0",
+        **_memory_update_kwargs(occupied_count=1, entangled_count=1),
+    )
+    timeline.time = 100
+    metrics.record(
+        EventTypes.MEMORY_UPDATE,
+        "n0",
+        **_memory_update_kwargs(occupied_count=2, entangled_count=2, purified_count=1),
+    )
+    timeline.time = 300
+
+    trial = metrics.collect_trial_metrics("n0")
+    # (0.2 * 100 + 0.5 * 200) / 300 = 0.4
+    assert trial["memory_utilization_ratio"] == pytest.approx(0.4)
+
+
+def test_memory_utilization_ratio_nan_without_updates():
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["memory_utilization_ratio"])
+
+
+def test_memory_utilization_ratio_enable_records_memory_update():
+    metrics.enable([metrics.MEMORY_UTILIZATION_RATIO_METRIC])
+
+    metrics.record(EventTypes.MEMORY_UPDATE, "n0", **_memory_update_kwargs(occupied_count=3))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 1
+    assert records[0].event_type is EventTypes.MEMORY_UPDATE
+    assert records[0].data.occupied_count == 3
+    assert records[0].data.total_memories == 10
+
+
+def _memory_expired_kwargs(**overrides):
+    return {"memory_index": 0, "identity": None, **overrides}
+
+
+def test_memory_decoherence_rate_computes_expired_over_total():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs())
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs(memory_index=1))
+    metrics.record(EventTypes.EG_SUCCESS, "n0", **_eg_success_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "other", **_eg_success_kwargs())
+    metrics.record(EventTypes.MEMORY_EXPIRED, "other", **_memory_expired_kwargs())
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["memory_decoherence_failures"] == 1
+    assert trial["memory_decoherence_success"] == 2
+    assert trial["memory_decoherence_success_rate"] == pytest.approx(2 / 3)
+
+
+def test_memory_decoherence_rate_zero_without_events():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["memory_decoherence_failures"] == 0
+    assert trial["memory_decoherence_success"] == 0
+    assert trial["memory_decoherence_success_rate"] == 0.0
+
+
+def test_memory_decoherence_rate_enable_records_expired_and_eg():
+    metrics.enable([metrics.MEMORY_DECOHERENCE_RATE_METRIC])
+
+    metrics.record(EventTypes.MEMORY_EXPIRED, "n0", **_memory_expired_kwargs())
+    metrics.record(EventTypes.EG_SUCCESS, "n0", **_eg_success_kwargs())
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.MEMORY_EXPIRED,
+        EventTypes.EG_SUCCESS,
+    }
+
+
+def test_reservation_success_rate_partial_completion():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=1),
+    )
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == pytest.approx(0.5)
+
+
+def test_reservation_success_rate_requires_entanglement_number_deliveries():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(
+        EventTypes.RESERVATION_APPROVED,
+        "n0",
+        **_reservation_outcome_kwargs(identity=1, entanglement_number=2),
+    )
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=2),
+    )
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 0.0
+
+    metrics.record(
+        EventTypes.DELIVERY,
+        "n0",
+        **_delivery_kwargs(identity=1, entanglement_number=2, fidelity=0.91),
+    )
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 1.0
+
+
+def test_reservation_success_rate_zero_without_approvals():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["reservation_success_rate"] == 0.0
+
+
+def test_reservation_success_rate_enable_records_approved_and_delivery():
+    metrics.enable([metrics.RESERVATION_SUCCESS_RATE_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(entanglement_number=1))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.DELIVERY,
+    }
+
+
+def test_jains_fairness_index_equal_allocations():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(identity=1, entanglement_number=1))
+    metrics.record(EventTypes.DELIVERY, "n1", **_delivery_kwargs(identity=2, entanglement_number=1))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert trial["jains_fairness_index"] == pytest.approx(1.0)
+
+
+def test_jains_fairness_index_unequal_with_starvation():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+    for _ in range(4):
+        metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(identity=1, entanglement_number=1))
+
+    trial = metrics.collect_trial_metrics("n0")
+    # x = [4, 0] → (4)^2 / (2 * 16) = 0.5
+    assert trial["jains_fairness_index"] == pytest.approx(0.5)
+
+
+def test_jains_fairness_index_nan_without_approvals():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["jains_fairness_index"])
+
+
+def test_jains_fairness_index_nan_when_all_starved():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs(identity=1))
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n1", **_reservation_outcome_kwargs(identity=2))
+
+    trial = metrics.collect_trial_metrics("n0")
+    assert math.isnan(trial["jains_fairness_index"])
+
+
+def test_jains_fairness_index_enable_records_approved_and_delivery():
+    metrics.enable([metrics.JAINS_FAIRNESS_INDEX_METRIC])
+
+    metrics.record(EventTypes.RESERVATION_APPROVED, "n0", **_reservation_outcome_kwargs())
+    metrics.record(EventTypes.DELIVERY, "n0", **_delivery_kwargs(entanglement_number=1))
+
+    records = metrics.storage.get_all()
+    assert len(records) == 2
+    assert {record.event_type for record in records} == {
+        EventTypes.RESERVATION_APPROVED,
+        EventTypes.DELIVERY,
+    }
