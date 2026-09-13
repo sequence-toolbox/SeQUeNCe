@@ -1,3 +1,4 @@
+from sequence.network_management.reservation import Reservation
 import math
 
 import pytest
@@ -253,16 +254,20 @@ def test_collect_trial_metrics_computes_throughput_from_deliveries():
     metrics.register_time_provider(timeline)
     metrics.enable([metrics.TIME_TO_SERVE_METRIC, metrics.THROUGHPUT_METRIC])
 
+    res = Reservation('left', 'right', int(1e12), int(2e12), 1, 0.9, entanglement_number=10, identity=10)
+    
     metrics.record(
         EventTypes.DELIVERY,
         "right",
-        **_delivery_kwargs(initiator="left", responder="right"),
+        fidelity=0.91,
+        **res,
     )
     timeline.time = int(2e12)
     metrics.record(
         EventTypes.DELIVERY,
         "right",
-        **_delivery_kwargs(initiator="left", responder="right", fidelity=0.91),
+        fidelity=0.91,
+        **res,
     )
 
     trial = metrics.collect_trial_metrics("left")
