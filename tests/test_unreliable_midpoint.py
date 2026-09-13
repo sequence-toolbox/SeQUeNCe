@@ -78,8 +78,6 @@ def test_false_positive_delivers_mixed_pairs():
     # Capture the computed state at delivery: an unbacked pair is written as the
     # maximally mixed state (state[0] == 0.25) while its bookkeeping fidelity
     # stays at the template value 0.9.
-    import json
-    from unreliable_midpoint.run_example import config_with_unreliable_midpoint
     seen = {"mixed": 0, "book": set()}
 
     class Probe(RequestApp):
