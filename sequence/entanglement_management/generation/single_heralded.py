@@ -59,6 +59,17 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
 
         self.bsm_res = [0, 0]
 
+    def _state_on_herald(self) -> "list[float] | None":
+        """Bell-diagonal state written for the two memories on an accepted herald.
+
+        Returns:
+            list[float] | None: the diagonal elements in I, Z, X, Y order, or
+                None to leave the quantum manager untouched.
+        """
+        in_fidelity = 1 - self.raw_fidelity
+        x_elem, y_elem, z_elem = (error * in_fidelity for error in self.raw_epr_errors)
+        return [self.raw_fidelity, z_elem, x_elem, y_elem]
+
     def update_memory(self) -> bool | None:
         """Method to handle necessary memory operations.
 
@@ -90,10 +101,8 @@ class SingleHeraldedA(EntanglementGenerationA, QuantumCircuitMixin):
                 remote_key = remote_memory.qstate_key
                 keys = [self_key, remote_key]
 
-                if self_key not in quantum_manager.states:
-                    in_fidelity = 1 - self.raw_fidelity
-                    x_elem, y_elem, z_elem = (error * in_fidelity for error in self.raw_epr_errors)
-                    state = [self.raw_fidelity, z_elem, x_elem, y_elem]
+                state = self._state_on_herald()
+                if state is not None and self_key not in quantum_manager.states:
                     quantum_manager.set(keys, state)
                     self.memory.bds_decohere()
                     remote_memory.bds_decohere()

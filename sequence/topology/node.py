@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 from ..kernel.entity import Entity, ClassicalEntity
 from ..components.memory import MemoryArray
-from ..components.bsm import SingleAtomBSM, SingleHeraldedBSM
+from ..components.bsm import BSM, SingleAtomBSM, SingleHeraldedBSM
 from ..components.light_source import LightSource
 from ..components.detector import QSDetector, QSDetectorPolarization, QSDetectorTimeBin
 from ..qkd.BB84 import BB84
@@ -256,14 +256,14 @@ class BSMNode(Node):
 
         # create BSM object with optional args
         bsm_name = name + ".BSM"
-        if self.encoding_type == 'single_atom':
-            bsm_args = component_templates.get("SingleAtomBSM", {})
-            bsm = SingleAtomBSM(bsm_name, timeline, **bsm_args)
-        elif self.encoding_type == 'single_heralded':
-            bsm_args = component_templates.get("SingleHeraldedBSM", {})
-            bsm = SingleHeraldedBSM(bsm_name, timeline, **bsm_args)
-        else:
+        bsm_class = BSM.resolve(self.encoding_type)
+        if bsm_class is None:
             raise ValueError(f'Encoding type {self.encoding_type} not supported')
+        arg_key = {'single_atom': 'SingleAtomBSM',
+                   'single_heralded': 'SingleHeraldedBSM'}.get(
+            self.encoding_type, bsm_class.__name__)
+        bsm_args = component_templates.get(arg_key, {})
+        bsm = bsm_class(bsm_name, timeline, **bsm_args)
 
         self.add_component(bsm)
         self.set_first_component(bsm_name)
