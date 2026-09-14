@@ -343,6 +343,9 @@ class Memory(Entity):
         self.generation_time = -1
         self.last_update_time = -1
 
+        # Detach from any joint state first, otherwise the remote memories sharing it keep a
+        # stale reference to this key and a later operation on them resurrects the discarded qubit.
+        self.timeline.quantum_manager.separate(self.qstate_key, self.get_generator().random())
         self.timeline.quantum_manager.set([self.qstate_key], [complex(1), complex(0)])
         self.entangled_memory = {'node_id': None, 'memo_id': None}
         if self.expiration_event is not None:
@@ -360,6 +363,7 @@ class Memory(Entity):
             May schedule expiration event.
         """
 
+        self.timeline.quantum_manager.separate(self.qstate_key, self.get_generator().random())
         self.timeline.quantum_manager.set([self.qstate_key], state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}
