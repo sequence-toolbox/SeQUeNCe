@@ -110,6 +110,44 @@ class BSM(Entity):
     _psi_plus = [complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)]
     _psi_minus = [complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)]
 
+    _bsm_registry: dict[str, type["BSM"]] = {}
+
+    @classmethod
+    def register(cls, name, bsm_class=None):
+        """Register a BSM class under an encoding name.
+
+        Usable directly, ``BSM.register("name", SomeBSM)``, or as a decorator,
+        ``@BSM.register("name")``. Built-in encodings register their own
+        classes, so a topology resolves the same classes it did before.
+
+        Args:
+            name (str): encoding name to register the class under.
+            bsm_class (type): the class, when called directly.
+
+        Returns:
+            type: the registered class (both forms).
+        """
+        if bsm_class is not None:
+            cls._bsm_registry[name] = bsm_class
+            return bsm_class
+
+        def decorator(klass):
+            cls._bsm_registry[name] = klass
+            return klass
+        return decorator
+
+    @classmethod
+    def resolve(cls, name):
+        """Return the BSM class registered under an encoding name, or None.
+
+        Args:
+            name (str): encoding name.
+
+        Returns:
+            type | None: the registered class, or None if the name is unknown.
+        """
+        return cls._bsm_registry.get(name)
+
     def __init__(self, name: str, timeline: "Timeline", phase_error: float = 0, detectors=None):
         """Constructor for base BSM object.
 
@@ -415,6 +453,7 @@ class TimeBinBSM(BSM):
         self.last_res = [time, detector_num]
 
 
+@BSM.register('single_atom')
 class SingleAtomBSM(BSM):
     """Class modeling a single atom BSM device.
 
@@ -609,6 +648,7 @@ class AbsorptiveBSM(BSM):
 
 
 
+@BSM.register('single_heralded')
 class SingleHeraldedBSM(BSM):
     """Class modeling an abstract/simplified BSM device for single-heralded entanglement generation protocols.
 
