@@ -1,5 +1,5 @@
-__all__ = ['entity', 'event', 'eventlist', 'process', 'quantum_gates', 'quantum_manager', 'quantum_state',
-           'quantum_utils', 'timeline']
+"""Core simulation primitives and quantum-state management."""
 
-def __dir__():
-    return sorted(__all__)
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

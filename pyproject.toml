@@ -23,6 +23,7 @@ dependencies = [
     "graphviz>=0.21",
     "ipywidgets>=8.1.8",
     "jupyterlab>=4.5.0",
+    "lazy-loader>=0.6",
     "matplotlib>=3.10.7",
     "networkx>=3.6.1",
     "numpy>=2.3.5",
@@ -34,7 +35,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",
     "typer>=0.24.1",
-    "stim>=1.15"
+    "stim>=1.15",
 ]
 
 [project.scripts]
