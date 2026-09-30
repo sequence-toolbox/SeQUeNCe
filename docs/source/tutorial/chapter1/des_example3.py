@@ -1,14 +1,10 @@
 """Demonstrate the usage of the logging system, which is a very useful debugging tool
 """
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
-
-import sequence.utils.log as log
-
+import sequence as sq
+from sequence import log
 
 class Store:
-    def __init__(self, tl: Timeline):
+    def __init__(self, tl: sq.Timeline):
         self.opening = False
         self.timeline = tl
 
@@ -21,8 +17,8 @@ class Store:
             log.logger.warning('Store was already open.')
 
         self.opening = True
-        process = Process(self, 'close', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'close', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
@@ -34,17 +30,17 @@ class Store:
             log.logger.warning('Store was already closed.')
 
         self.opening = False
-        process = Process(self, 'open', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'open', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
 
 if __name__ == '__main__':
-    tl = Timeline()
+    tl = sq.Timeline()
     tl.show_progress = False
     store = Store(tl)
-    process = Process(store, 'open', [])
-    event = Event(7, process)
+    process = sq.Process(store, 'open', [])
+    event = sq.Event(7, process)
     tl.schedule(event)
 
     log_filename = 'store.log'
