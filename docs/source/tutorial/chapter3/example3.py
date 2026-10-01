@@ -1,9 +1,4 @@
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
-from sequence.components.optical_channel import ClassicalChannel
-from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
-from sequence.message import Message
+import sequence as sq
 
 
 class SimpleManager:
@@ -24,46 +19,46 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+            self.owner.protocols = [sq.EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo,
                                                                  success_prob=1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
-            self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]
+            self.owner.protocols = [sq.EntanglementSwappingB.create(self.owner, f'{self.owner.name}.ESB', memo)]
 
 
-class SwapNodeA(Node):
-    def __init__(self, name: str, tl: Timeline):
+class SwapNodeA(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         left_memo_name = '%s.left_memo' % name
         right_memo_name = '%s.right_memo' % name
-        left_memo = Memory(left_memo_name, tl, 0.9, 2000, 1, -1, 500)
-        right_memo = Memory(right_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        left_memo = sq.Memory(left_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        right_memo = sq.Memory(right_memo_name, tl, 0.9, 2000, 1, -1, 500)
         self.add_component(left_memo)
         self.add_component(right_memo)
 
         self.resource_manager = SimpleManager(self, [left_memo_name, right_memo_name])
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: 'sq.Message') -> None:
         self.protocols[0].received_message(src, msg)
 
 
-class SwapNodeB(Node):
-    def __init__(self, name: str, tl: Timeline):
+class SwapNodeB(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         memo_name = '%s.memo' % name
-        memo = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memo = sq.Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
         self.add_component(memo)
 
         self.resource_manager = SimpleManager(self, [memo_name])
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: 'sq.Message') -> None:
         self.protocols[0].received_message(src, msg)
 
     def create_protocol(self):
-        self.protocols = [EntanglementSwappingB.create(self, '%s.ESB'%self.name, self.memo)]
+        self.protocols = [sq.EntanglementSwappingB.create(self, '%s.ESB'%self.name, self.memo)]
 
 
-def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float):
+def entangle_memory(tl: sq.Timeline, memo1: sq.Memory, memo2: sq.Memory, fidelity: float):
     SQRT_HALF = 0.5 ** 0.5
     phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
 
@@ -92,7 +87,7 @@ def pair_protocol(node1, node2, node_mid):
 
 
 if __name__ == '__main__':
-    tl = Timeline()
+    tl = sq.Timeline()
 
     left_node = SwapNodeB('left', tl)
     right_node = SwapNodeB('right', tl)
@@ -106,7 +101,7 @@ if __name__ == '__main__':
     for i in range(3):
         for j in range(3):
             if i != j:
-                cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
+                cc = sq.ClassicalChannel(f'cc_{nodes[i].name}_{nodes[j].name}', tl, 1000, 1e9)
                 cc.set_ends(nodes[i], nodes[j].name)
 
     left_memo = left_node.components[left_node.resource_manager.memo_names[0]]

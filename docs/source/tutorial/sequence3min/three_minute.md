@@ -20,27 +20,25 @@ Alternatively, if you downloaded SeQUeNCe with the tutorial files included, you 
 
 ### Step 2: Import the Required Modules
 
-We begin by importing the request application, the router-network topology class, and the entanglement-generation protocol controls. The `RequestApp` class provides a simple application interface for making an entanglement request between two routers.
 
+We begin by importing sequence. We will use the request application, the router-network topology class, and the entanglement-generation protocol controls. The `RequestApp` class provides a simple application interface for making an entanglement request between two routers. Each component is available via the sequence import.
 ```python
-from sequence.app.request_app import RequestApp
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.constants import SINGLE_HERALDED, SECOND
-from sequence.entanglement_management.generation import EntanglementGenerationA, EntanglementGenerationB
+import sequence as sq
+from sequence import constants
 ```
 
 This tutorial uses the single-heralded entanglement-generation protocol. We set both the router-side and BSM-side generation protocols to `SINGLE_HERALDED` before loading the network.
 
 ```python
-EntanglementGenerationA.set_global_type(SINGLE_HERALDED)
-EntanglementGenerationB.set_global_type(SINGLE_HERALDED)
+sq.EntanglementGenerationA.set_global_type(sq.constants.SINGLE_HERALDED)
+sq.EntanglementGenerationB.set_global_type(sq.constants.SINGLE_HERALDED)
 ```
 ### Step 3: Load the Network
 
 Next, we load the generated JSON file into a `RouterNetTopo`. This constructs the timeline, quantum routers, BSM node, and communication channels defined in the topology file.
 
 ```python
-network_topo = RouterNetTopo(config_source="docs/source/tutorial/sequence3min/two_node.json")
+network_topo = sq.RouterNetTopo(config_source="docs/source/tutorial/sequence3min/two_node.json")
 tl = network_topo.get_timeline()
 ```
 
@@ -50,8 +48,8 @@ Loop over the node objects, and then attach the application to the nodes and mak
 
 ```python
 name_to_app = {}
-for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
-    name_to_app[router.name] = RequestApp(router)
+for router in network_topo.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
+    name_to_app[router.name] = sq.RequestApp(router)
 ```
 
 ### Step 5: Run the Simulation
@@ -62,7 +60,7 @@ Finally, we initialize the timeline, start Alice's request to Bob, and run the s
 tl.init()
 alice = "router_0"
 bob = "router_1"
-name_to_app[alice].start(responder=bob, start_t=1 * SECOND, end_t=2.5 * SECOND, memo_size=1, fidelity=0.8)
+name_to_app[alice].start(responder=bob, start_t=1 * constants.SECOND, end_t=2.5 * constants.SECOND, memo_size=1, fidelity=0.8)
 tl.run()
 ```
 

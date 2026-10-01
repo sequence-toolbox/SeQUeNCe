@@ -1,7 +1,7 @@
 """Demonstrate the usage of the logging system, which is a very useful debugging tool
 """
 import sequence as sq
-from sequence import log
+import sequence.utils.log as log
 
 class Store:
     def __init__(self, tl: sq.Timeline):

@@ -38,17 +38,14 @@ It may be accessed by outside protocols to monitor components or get their curre
 We'll put the detector on the receiver node, and the memory on the sender node.
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
-from sequence.components.detector import Detector
+import sequence as sq
 
-class SenderNode(Node):
+class SenderNode(sq.Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
         
         memory_name = name + ".memory"
-        memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
+        memory = sq.Memory(memory_name, timeline, fidelity=1, frequency=0,
                         efficiency=1, coherence_time=0, wavelength=500)
         self.add_component(memory)
         memory.add_receiver(self)
@@ -56,12 +53,12 @@ class SenderNode(Node):
     def get(self, photon, **kwargs):
         self.send_qubit(kwargs['dst'], photon)
 
-class ReceiverNode(Node):
+class ReceiverNode(sq.Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
 
         detector_name = name + ".detector"
-        detector = Detector(detector_name, timeline, efficiency=1)
+        detector = sq.Detector(detector_name, timeline, efficiency=1)
         self.add_component(detector)
         self.set_first_component(detector_name)
         detector.owner = self
@@ -107,12 +104,12 @@ To have the counter monitor the detector, we invoke the `Entity.attach` method.
 This method ensures that any updates (such as detection events) from an entity are passed to the object specified in the method arguments.
 
 ```python
-class ReceiverNode(Node):
+class ReceiverNode(sq.Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
 
         detector_name = name + ".detector"
-        detector = Detector(detector_name, timeline, efficiency=1)
+        detector = sq.Detector(detector_name, timeline, efficiency=1)
         self.add_component(detector)
         self.set_first_component(detector_name)
         detector.owner = self
@@ -129,8 +126,8 @@ We will define it later in the tutorial.
 We are now ready to start writing the main function of our script. The first step is to create the simulation timeline. We will use a 10 second run time, but more or less time may be needed depending on hardware parameters. Note that the runtime is given in **picoseconds**.
 
 ```python
-from sequence.kernel.timeline import Timeline
-tl = Timeline(10e12)
+import sequence as sq
+tl = sq.Timeline(10e12)
 ```
 
 We can then create our two network nodes using our custom node class. We only need to specify a name for each node and the timeline it belongs to:
@@ -145,8 +142,8 @@ node2.set_seed(1)
 Note that we also set the random generator seed for our nodes to ensure reproducibility. Next, we create the quantum channel to provide connectivity between the nodes. We won’t need a classical channel, as we’re not sending any messages between nodes. In the initializer, we again specify the name and timeline, and include the additional required attenuation and distance parameters. We set attenuation to 0, so that we do not lose any photons in the channel (try changing it to see the effects!), and set the distance to one kilometer (note that the distance is given in meters). The `set_ends` method finally sets the sender and receiver for the channel, where the receiver is given as the name of the receiving node.
 
 ```python
-from sequence.components.optical_channel import QuantumChannel
-qc = QuantumChannel("qc", tl, attenuation=0, distance=1e3)
+import sequence as sq
+qc = sq.QuantumChannel("qc", tl, attenuation=0, distance=1e3)
 qc.set_ends(node1, node2.name)
 ```
 
@@ -159,7 +156,7 @@ We can obtain the memory object using the `Node.get_components_by_type` method, 
 The memory state can then be set with the `update_state` method.
 
 ```python
-memories = node1.get_components_by_type(Memory)
+memories = node1.get_components_by_type(sq.Memory)
 memory = memories[0]
 memory.update_state([complex(0), complex(1)])
 ```
@@ -181,11 +178,10 @@ class Counter:
 We must also schedule an excite event for the memory, which will send a photon to a connected node supplied as an argument (in this case, we'll use `"node2"`). Let's put it at time 0:
 
 ```python
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
+import sequence as sq
 
-process = Process(memory, "excite", ["node2"])
-event = Event(0, process)
+process = sq.Process(memory, "excite", ["node2"])
+event = sq.Event(0, process)
 tl.schedule(event)
 ```
 
@@ -227,11 +223,11 @@ class Sender:
         self.memory = self.owner.components[memory_name]
 
     def start(self, period):
-        process1 = Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
-        process2 = Process(self.memory, "excite", ["node2"])
+        process1 = sq.Process(self.memory, "update_state", [[complex(math.sqrt(1/2)), complex(math.sqrt(1/2))]])
+        process2 = sq.Process(self.memory, "excite", ["node2"])
         for i in range(NUM_TRIALS):
-            event1 = Event(i * period, process1)
-            event2 = Event(i * period + (period / 2), process2)
+            event1 = sq.Event(i * period, process1)
+            event2 = sq.Event(i * period + (period / 2), process2)
             self.owner.timeline.schedule(event1)
             self.owner.timeline.schedule(event2)
 ```
@@ -239,11 +235,11 @@ class Sender:
 We'll then place this protocol in the `SenderNode` class:
 
 ```python
-class SenderNode(Node):
+class SenderNode(sq.Node):
     def __init__(self, name, timeline):
         super().__init__(name, timeline)
         memory_name = name + ".memory"
-        memory = Memory(memory_name, timeline, fidelity=1, frequency=0,
+        memory = sq.Memory(memory_name, timeline, fidelity=1, frequency=0,
                         efficiency=1, coherence_time=0, wavelength=500)
         self.add_component(memory)
         memory.add_receiver(self)
@@ -272,7 +268,7 @@ tl.run()
 To access the results of our simulation, we just need the count parameter of our custom counter class. We’ll read it, and present the number of detections we had as a percent of the number of excite operations:
 
 ```python
-print("percent measured: {}%".format(100 * node2.counter.count / NUM_TRIALS))
+print(f"percent measured: {100 * node2.counter.count / NUM_TRIALS}")
 ```
 
 We expect the percent to be about 50%, as we initialized the memory in the |+&#10217; state each time. Try messing with parameters to achieve different measurement results!
@@ -302,12 +298,10 @@ class MsgType(Enum):
 Now we can define the protocols. They will inherit from the `Protocol` class in SeQUeNCe. The `PingProtocol` on node 1 will send an initial `PING` message with the `start` method, and the `PongProtocol` will send a `PONG` message in response. Let's view their implementations and go over the methods required:
 
 ```python
-from sequence.topology.node import Node
-from sequence.protocol import Protocol
-from sequence.message import Message
+import sequence as sq
 
-class PingProtocol(Protocol):
-    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+class PingProtocol(sq.Protocol):
+    def __init__(self, owner: sq.Node, name: str, other_name: str, other_node: str):
         super().__init__(owner, name)
         owner.protocols.append(self)
         self.other_name = other_name
@@ -317,16 +311,16 @@ class PingProtocol(Protocol):
         pass
 
     def start(self):
-        new_msg = Message(MsgType.PING, self.other_name)
+        new_msg = sq.Message(MsgType.PING, self.other_name)
         self.owner.send_message(self.other_node, new_msg)
 
-    def received_message(self, src: str, message: Message):
+    def received_message(self, src: str, message: sq.Message):
         assert message.msg_type == MsgType.PONG
-        print("node {} received pong message at time {}".format(self.owner.name, self.owner.timeline.now()))
+        print(f"node {self.owner.name} received pong message at time {self.owner.timeline.now()}")
 
 
-class PongProtocol(Protocol):
-    def __init__(self, owner: Node, name: str, other_name: str, other_node: str):
+class PongProtocol(sq.Protocol):
+    def __init__(self, owner: sq.Node, name: str, other_name: str, other_node: str):
         super().__init__(owner, name)
         owner.protocols.append(self)
         self.other_name = other_name
@@ -335,10 +329,10 @@ class PongProtocol(Protocol):
     def init(self):
         pass
 
-    def received_message(self, src: str, message: Message):
+    def received_message(self, src: str, message: sq.Message):
         assert message.msg_type == MsgType.PING
-        print("node {} received ping message at time {}".format(self.owner.name, self.owner.timeline.now()))
-        new_msg = Message(MsgType.PONG, self.other_name)
+        print(f"node {self.owner.name} received ping message at time {self.owner.timeline.now()}")
+        new_msg = sq.Message(MsgType.PONG, self.other_name)
         self.owner.send_message(self.other_node, new_msg)
 ```
 
@@ -365,16 +359,15 @@ On both protocols, we wish to display when we receive a message. We can see the 
 We have now already completed the majority of the work required for our experiment! The only thing left is to create our nodes, protocols, and classical channel connection, and then run the experiment (which we will do in the next step). Classical channels in sequence are one-way only, so we will need to define two to achieve our two-way communication.
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.components.optical_channel import ClassicalChannel
+import sequence as sq
 
-tl = Timeline(1e12)
+tl = sq.Timeline(1e12)
 
-node1 = Node("node1", tl)
-node2 = Node("node2", tl)
+node1 = sq.Node("node1", tl)
+node2 = sq.Node("node2", tl)
 
-cc0 = ClassicalChannel("cc0", tl, 1e3, 1e9)
-cc1 = ClassicalChannel("cc1", tl, 1e3, 1e9)
+cc0 = sq.ClassicalChannel("cc0", tl, 1e3, 1e9)
+cc1 = sq.ClassicalChannel("cc1", tl, 1e3, 1e9)
 cc0.set_ends(node1, node2.name)
 cc1.set_ends(node2, node1.name)
 
@@ -389,11 +382,10 @@ The classical channel constructor takes a name and timeline followed by the `dis
 We finally schedule the start of our ping-pong communication and run the experiment:
 
 ```python
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
+import sequence as sq
 
-process = Process(pingp, "start", [])
-event = Event(0, process)
+process = sq.Process(pingp, "start", [])
+event = sq.Event(0, process)
 tl.schedule(event)
 
 tl.init()

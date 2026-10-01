@@ -1,19 +1,9 @@
 from __future__ import annotations
-from sequence.app.app import App
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
-from sequence.topology.router_net_topo import RouterNetTopo
-from sequence.resource_management.memory_manager import MemoryInfo
-from sequence.network_management.reservation import Reservation
+import sequence as sq
 
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from sequence.topology.node import QuantumRouter
-
-
-class PeriodicApp(App):
-    def __init__(self, node: QuantumRouter, other: str, memory_size=25, target_fidelity=0.9):
+class PeriodicApp(sq.App):
+    def __init__(self, node: sq.QuantumRouter, other: str, memory_size=25, target_fidelity=0.9):
         super().__init__(node)
         self.other = other
         self.memory_size = memory_size
@@ -26,33 +16,33 @@ class PeriodicApp(App):
                    memory_size=self.memory_size,
                    target_fidelity=self.target_fidelity)
         # schedule future start
-        process = Process(self, "start", [])
-        event = Event(now + PERIOD, process)
+        process = sq.Process(self, "start", [])
+        event = sq.Event(now + PERIOD, process)
         self.node.timeline.schedule(event)
 
-    def get_reservation_result(self, reservation: "Reservation", result: bool):
+    def get_reservation_result(self, reservation: 'sq.Reservation', result: bool):
         if result:
             print("Reservation approved at time", self.node.timeline.now() * 1e-12)
         else:
             print("Reservation failed at time", self.node.timeline.now() * 1e-12)
 
-    def get_other_reservation(self, reservation: "Reservation"):
+    def get_other_reservation(self, reservation: 'sq.Reservation'):
         pass
 
-    def get_memory(self, info: "MemoryInfo"):
+    def get_memory(self, info: 'sq.MemoryInfo'):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
             print("\t{} app received memory {} ENTANGLED at time {}".format(
                 self.node.name, info.index, self.node.timeline.now() * 1e-12))
             self.node.resource_manager.update(None, info.memory, "RAW")
 
 
-class ResetApp(App):
+class ResetApp(sq.App):
     def __init__(self, node, other_node_name, target_fidelity=0.9):
         super().__init__(node)
         self.other_node_name = other_node_name
         self.target_fidelity = target_fidelity
 
-    def get_reservation_result(self, reservation: "Reservation", result: bool):
+    def get_reservation_result(self, reservation: 'sq.Reservation', result: bool):
         pass
 
     def get_other_reservation(self, reservation):
@@ -84,7 +74,7 @@ if __name__ == "__main__":
     NUM_PERIODS = 5
     PERIOD = 2e12
 
-    network_topo = RouterNetTopo(network_config)
+    network_topo = sq.RouterNetTopo(network_config)
     tl = network_topo.get_timeline()
     tl.stop_time = PERIOD * NUM_PERIODS
     tl.show_progress = False
@@ -93,7 +83,7 @@ if __name__ == "__main__":
     end_node_name = "end2"
     node1 = node2 = None
 
-    for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    for router in network_topo.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
         if router.name == start_node_name:
             node1 = router
         elif router.name == end_node_name:

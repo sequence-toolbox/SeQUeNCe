@@ -39,21 +39,19 @@ In our case, we can leave this method empty.
 Finally, we modify the `get` method as in previous tutorials to direct photons from the memory array.
 
 ```python
-from sequence.topology.node import Node
-from sequence.components.memory import MemoryArray
-from sequence.resource_management.resource_manager import ResourceManager
+import sequence as sq
 
-class RouterNode(Node):
+class RouterNode(sq.Node):
     def __init__(self, name, tl, memo_size=50):
         super().__init__(name, tl)
         memory_array_name = name + ".MemoryArray"
-        memory_array = MemoryArray(memory_array_name, tl, num_memories=memo_size)
+        memory_array = sq.MemoryArray(memory_array_name, tl, num_memories=memo_size)
         memory_array.add_receiver(self)
         self.add_component(memory_array)
 
-        self.resource_manager = ResourceManager(self, memory_array_name)
+        self.resource_manager = sq.ResourceManager(self, memory_array_name)
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: "sq.Message") -> None:
         if msg.receiver == "resource_manager":
             self.resource_manager.received_message(src, msg)
         else:
@@ -67,10 +65,10 @@ class RouterNode(Node):
                         protocol.received_message(src, msg)
                         break
 
-    def get_idle_memory(self, info: "MemoryInfo") -> None:
+    def get_idle_memory(self, info: "sq.MemoryInfo") -> None:
         pass
 
-    def get(self, photon: "Photon", **kwargs):
+    def get(self, photon: "sq.Photon", **kwargs):
         dst = kwargs['dst']
         self.send_qubit(dst, photon)
 ```
@@ -84,7 +82,7 @@ nodes. We implement a general condition function for choosing `RAW` memories wit
 and `index_upper`. Our condition is thus relatively simple:
 
 ```python
-def eg_rule_condition(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+def eg_rule_condition(memory_info: "sq.MemoryInfo", manager: "sq.MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     if memory_info.state == "RAW" \
@@ -132,7 +130,7 @@ The `mid_name` and `other_name` in `args` define the name of BSM node and the ot
 Note that the name of router 1 will be `“r1”`, the name of router 2 will be `“r2”`, and the name of the intermediate measurement node (see tutorial 3 for details) will be `“m12”`, which will be set when loading rules.
 
 ```python
-from sequence.entanglement_management.generation import EntanglementGenerationA
+import sequence as sq
 
 def eg_match_func(protocols, args):
     remote_node = args["remote_node"]
@@ -140,7 +138,7 @@ def eg_match_func(protocols, args):
     index_lower = args["index_lower"]
 
     for protocol in protocols:
-        if not isinstance(protocol, EntanglementGenerationA):
+        if not isinstance(protocol, sq.EntanglementGenerationA):
             continue
         mem_arr = protocol.own.get_components_by_type("MemoryArray")[0]
         if protocol.remote_node_name == remote_node and \
@@ -148,23 +146,23 @@ def eg_match_func(protocols, args):
             return protocol
 
 
-def eg_rule_action_await(memories_info: List["MemoryInfo"], args):
+def eg_rule_action_await(memories_info: List["sq.MemoryInfo"], args):
     mid_name = args["mid_name"]
     other_name = args["other_name"]
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name,
+    protocol = sq.EntanglementGenerationA.create(None, "EGA." + memory.name,
                                               mid_name, other_name, memory)
     return [protocol, [None], [None], [None]]
 
 
-def eg_rule_action_request(memories_info: List["MemoryInfo"], args):
+def eg_rule_action_request(memories_info: List["sq.MemoryInfo"], args):
     mid_name = args["mid_name"]
     other_name = args["other_name"]
 
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementGenerationA.create(None, "EGA." + memory.name, 
+    protocol = sq.EntanglementGenerationA.create(None, "EGA." + memory.name,
                                               mid_name, other_name, memory)
     req_args = {"remote_node": args["node_name"],
                 "index_upper": args["index_upper"],
@@ -178,20 +176,18 @@ We’ll now actually build our network and get ready to run the simulation.
 We will include the third router node, as this will be used for our second flow, but we will not use it in our first experiment:
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import BSMNode
-from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
+import sequence as sq
 
 runtime = 10e12
-tl = Timeline(runtime)
+tl = sq.Timeline(runtime)
 
 # nodes
 r1 = RouterNode("r1", tl, memo_size=20)
 r2 = RouterNode("r2", tl, memo_size=40)
 r3 = RouterNode("r3", tl, memo_size=10)
 
-m12 = BSMNode("m12", tl, ["r1", "r2"])
-m23 = BSMNode("m23", tl, ["r2", "r3"])
+m12 = sq.BSMNode("m12", tl, ["r1", "r2"])
+m23 = sq.BSMNode("m23", tl, ["r2", "r3"])
 
 node_list = [r1, r2, r3, m12, m23]
 for i, node in enumerate(node_list):
@@ -201,20 +197,20 @@ for i, node in enumerate(node_list):
 cc_delay = 1e9
 for node1 in node_list:
     for node2 in node_list:
-        cc = ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
+        cc = sq.ClassicalChannel("cc_%s_%s" % (node1.name, node2.name), tl, 1e3, delay=cc_delay)
         cc.set_ends(node1, node2.name)
 
 # create quantum channels linking r1 and r2 to m1
 qc_atten = 0
 qc_dist = 1e3
-qc1 = QuantumChannel("qc_r1_m12", tl, qc_atten, qc_dist)
+qc1 = sq.QuantumChannel("qc_r1_m12", tl, qc_atten, qc_dist)
 qc1.set_ends(r1, m12.name)
-qc2 = QuantumChannel("qc_r2_m12", tl, qc_atten, qc_dist)
+qc2 = sq.QuantumChannel("qc_r2_m12", tl, qc_atten, qc_dist)
 qc2.set_ends(r2, m12.name)
 # create quantum channels linking r2 and r3 to m2
-qc3 = QuantumChannel("qc_r2_m23", tl, qc_atten, qc_dist)
+qc3 = sq.QuantumChannel("qc_r2_m23", tl, qc_atten, qc_dist)
 qc3.set_ends(r2, m23.name)
-qc4 = QuantumChannel("qc_r3_m23", tl, qc_atten, qc_dist)
+qc4 = sq.QuantumChannel("qc_r3_m23", tl, qc_atten, qc_dist)
 qc4.set_ends(r3, m23.name)
 ```
 
@@ -227,7 +223,7 @@ manager. For flow 1, routers `r1` and `r2` will use BSM node `m12` and memories 
 generate entanglement. These are specified in the action and condition args.
 
 ```python
-from sequence.resource_management.rule_manager import Rule
+import sequence as sq
 
 tl.init()
 
@@ -235,10 +231,10 @@ tl.init()
 action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1",
                "index_upper": 9, "index_lower": 0}
 condition_args = {"index_lower": 0, "index_upper": 9}
-rule1 = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+rule1 = sq.Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
 r1.resource_manager.load(rule1)
 action_args2 = {"mid_name": "m12", "other_name": "r1"}
-rule2 = Rule(10, eg_rule_action_await, eg_rule_condition, action_args2, condition_args)
+rule2 = sq.Rule(10, eg_rule_action_await, eg_rule_condition, action_args2, condition_args)
 r2.resource_manager.load(rule2)
 
 tl.run()
@@ -270,7 +266,7 @@ To do this, we'll create a function `add_eg_rules` that takes as arguments
 The conditions and actions of the rule will be very similar to before, but with variable memory indices, nodes, and arguments.
 
 ```python
-def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
+def add_eg_rules(index: int, path: List[RouterNode], middles: List[sq.BSMNode]):
     assert len(path) == len(middles) + 1
     node_names = [node.name for node in path]
     middle_names = [node.name for node in middles]
@@ -285,7 +281,7 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
         condition_args = {"index_lower": mem_range[0],
                           "index_upper": mem_range[0] + 9}
 
-        rule = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+        rule = sq.Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
         node.resource_manager.load(rule)
 
     if index < (len(path) - 1):
@@ -302,7 +298,7 @@ def add_eg_rules(index: int, path: List[RouterNode], middles: List[BSMNode]):
                        "index_upper": node_mems[index + 1][1] - 1,
                        "index_lower": node_mems[index + 1][0]}
 
-        rule = Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
+        rule = sq.Rule(10, eg_rule_action_request, eg_rule_condition, action_args, condition_args)
         node.resource_manager.load(rule)
 ```
 
@@ -317,9 +313,9 @@ The arguments for our `add_ep_rules` function will be similar to our previous fu
 - `target_fidelity`, the fidelity of entanglement we wish to achieve.
 
 ```python
-from sequence.entanglement_management.purification import PurificationProtocol
+import sequence as sq
 
-def ep_rule_condition_request(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+def ep_rule_condition_request(memory_info: "sq.MemoryInfo", manager: "sq.MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     target_fidelity = args["target_fidelity"]
@@ -342,7 +338,7 @@ def ep_match_func(protocols, args):
 
     _protocols = []
     for protocol in protocols:
-        if not isinstance(protocol, PurificationProtocol):
+        if not isinstance(protocol, sq.PurificationProtocol):
             continue
 
         if protocol.kept_memo.name == remote1:
@@ -364,10 +360,10 @@ def ep_match_func(protocols, args):
     return _protocols[0]
 
 
-def ep_rule_action_request(memories_info: List["MemoryInfo"], args):
+def ep_rule_action_request(memories_info: List["sq.MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = PurificationProtocol.create(None, name, memories[0], memories[1])
+    protocol = sq.PurificationProtocol.create(None, name, memories[0], memories[1])
     dsts = [memories_info[0].remote_node]
     req_funcs = [ep_match_func]
     req_args = {"remote1": memories_info[0].remote_memo,
@@ -375,7 +371,7 @@ def ep_rule_action_request(memories_info: List["MemoryInfo"], args):
     return [protocol, dsts, req_funcs, [req_args]]
 
 
-def ep_rule_condition_await(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+def ep_rule_condition_await(memory_info: "sq.MemoryInfo", manager: "sq.MemoryManager", args):
     index_upper = args["index_upper"]
     index_lower = args["index_lower"]
     target_fidelity = args["target_fidelity"]
@@ -385,10 +381,10 @@ def ep_rule_condition_await(memory_info: "MemoryInfo", manager: "MemoryManager",
         return [memory_info]
     return []
 
-def ep_rule_action_await(memories_info: List["MemoryInfo"], args):
+def ep_rule_action_await(memories_info: List["sq.MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     name = "EP.%s" % (memories[0].name)
-    protocol = PurificationProtocol.create(None, name, memories[0], None)
+    protocol = sq.PurificationProtocol.create(None, name, memories[0], None)
     return [protocol, [None], [None], [None]]
 
 
@@ -403,7 +399,7 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
                           "index_upper": mem_range[1] - 1,
                           "target_fidelity": target_fidelity}
 
-        rule = Rule(10, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
+        rule = sq.Rule(10, ep_rule_action_request, ep_rule_condition_request, {}, condition_args)
         node.resource_manager.load(rule)
 
     if index < len(path) - 1:
@@ -416,7 +412,7 @@ def add_ep_rules(index: int, path: List[RouterNode], target_fidelity: float):
                               "index_upper": mem_range[1] - 1,
                               "target_fidelity": target_fidelity}
 
-        rule = Rule(10, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
+        rule = sq.Rule(10, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
         node.resource_manager.load(rule)
 ```
 
@@ -428,9 +424,9 @@ Our condition will be that we have memory pairs in the `ENTANGLED` state between
 For now, we will only define the actions and conditions and leave the rule creation for the script.
 
 ```python
-from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+import sequence as sq
 
-def es_rule_condition_A(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+def es_rule_condition_A(memory_info: "sq.MemoryInfo", manager: "sq.MemoryManager", args):
     index_lower = args["index_lower"]
     index_upper = args["index_upper"]
     target_fidelity = args["target_fidelity"]
@@ -462,19 +458,19 @@ def es_rule_condition_A(memory_info: "MemoryInfo", manager: "MemoryManager", arg
 def es_match_func(protocols, args):
     target_memo = args["target_memo"]
     for protocol in protocols:
-        if (isinstance(protocol, EntanglementSwappingB)
+        if (isinstance(protocol, sq.EntanglementSwappingB)
                 and protocol.memory.name == target_memo):
             return protocol
 
 
-def es_rule_action_A(memories_info: List["MemoryInfo"], args):
+def es_rule_action_A(memories_info: List["sq.MemoryInfo"], args):
     succ_prob = args["succ_prob"]
     degradation = args["degradation"]
 
     memories = [info.memory for info in memories_info]
 
     protocol_name = "ESA.%s.%s" % (memories[0].name, memories[1].name)
-    protocol = EntanglementSwappingA.create(None, protocol_name, memories[0], memories[1], 
+    protocol = sq.EntanglementSwappingA.create(None, protocol_name, memories[0], memories[1],
                                             success_prob=succ_prob, degradation=degradation)
     dsts = [info.remote_node for info in memories_info]
     req_funcs = [es_match_func, es_match_func]
@@ -483,7 +479,7 @@ def es_rule_action_A(memories_info: List["MemoryInfo"], args):
     return [protocol, dsts, req_funcs, req_args]
 
 
-def es_rule_condition_B(memory_info: "MemoryInfo", manager: "MemoryManager", args):
+def es_rule_condition_B(memory_info: "sq.MemoryInfo", manager: "sq.MemoryManager", args):
     index_lower = args["index_lower"]
     index_upper = args["index_upper"]
     target_node = args["target_node"]
@@ -498,10 +494,10 @@ def es_rule_condition_B(memory_info: "MemoryInfo", manager: "MemoryManager", arg
         return []
 
 
-def es_rule_action_B(memories_info: List["MemoryInfo"], args):
+def es_rule_action_B(memories_info: List["sq.MemoryInfo"], args):
     memories = [info.memory for info in memories_info]
     memory = memories[0]
-    protocol = EntanglementSwappingB.create(None, "ESB." + memory.name, memory)
+    protocol = sq.EntanglementSwappingB.create(None, "ESB." + memory.name, memory)
     return [protocol, [None], [None], [None]]
 ```
 
@@ -516,10 +512,10 @@ tl.init()
 action_args = {"mid_name": "m12", "other_name": "r2", "node_name": "r1",
                "index_upper": 9, "index_lower": 0}
 condition_args = {"index_lower": 0, "index_upper": 9}
-rule1 = Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
+rule1 = sq.Rule(10, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
 r1.resource_manager.load(rule1)
 action_args2 = {"mid_name": "m12", "other_name": "r1"}
-rule2 = Rule(10, eg_rule_action_request, eg_rule_condition, action_args2, condition_args)
+rule2 = sq.Rule(10, eg_rule_action_request, eg_rule_condition, action_args2, condition_args)
 r2.resource_manager.load(rule2)
 
 # load rules for flow 2
@@ -531,14 +527,14 @@ condition_args = {"index_lower": 10,
                   "index_upper": 20,
                   "target_node": r3.name,
                   "target_fidelity": 0.9}
-rule = Rule(10, es_rule_action_B, es_rule_conditionB, {}, condition_args)
+rule = sq.Rule(10, es_rule_action_B, es_rule_conditionB, {}, condition_args)
 r1.resource_manager.load(rule)
 
 condition_args = {"index_lower": 0,
                   "index_upper": 10,
                   "target_node": r1.name,
                   "target_fidelity": 0.9}
-rule = Rule(10, es_rule_action_B, es_rule_conditionB, {}, condition_args)
+rule = sq.Rule(10, es_rule_action_B, es_rule_conditionB, {}, condition_args)
 r3.resource_manager.load(rule)
 
 action_args = {"succ_prob": 1, "degradation": 1}
@@ -546,7 +542,7 @@ condition_args = {"index_lower": 10,
                   "index_upper": 30,
                   "target_fidelity": 0.9,
                   "left": r1.name, "right": r3.name}
-rule = Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
+rule = sq.Rule(10, es_rule_action_A, es_rule_condition_A, action_args, condition_args)
 r2.resource_manager.load(rule)
 
 tl.run()
