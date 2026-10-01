@@ -1,3 +1,4 @@
 recommonmark
 sphinx-rtd-theme
 sequence
+lazy-loader
