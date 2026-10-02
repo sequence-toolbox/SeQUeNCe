@@ -132,6 +132,33 @@ class QuantumManagerDensity(QuantumManager):
         """
         self.set([key], [[complex(0), complex(0)], [complex(0), complex(1)]])
 
+    def separate(self, key: int, meas_samp: float = None) -> None:
+        """Detach a key from its joint state by tracing it out.
+
+        A density matrix represents the reduced state of the remaining qubits exactly,
+        so no collapse is needed here.
+
+        Note:
+            `meas_samp` is intentionally unused. Kept for interface compatibility.
+
+        Args:
+            key (int): key to detach from its joint state.
+            meas_samp (float): unused.
+        """
+        state = self.states.get(key)
+        if state is None or len(state.keys) <= 1:
+            return
+
+        all_keys = state.keys
+        index = all_keys.index(key)
+        num_qubits = len(all_keys)
+        tensor = np.asarray(state.state, dtype=complex).reshape((2,) * (2 * num_qubits))
+        reduced = np.trace(tensor, axis1=index, axis2=num_qubits + index)
+        reduced = reduced.reshape(2 ** (num_qubits - 1), 2 ** (num_qubits - 1))
+
+        rem_keys = [k for k in all_keys if k != key]
+        self.set(rem_keys, reduced)
+
     def get_ascending_keys(self, key: int) -> DensityState:
         """Method to get quantum state stored at an index.
            Reorders qubits (in-place) in ascending order of keys before returning.

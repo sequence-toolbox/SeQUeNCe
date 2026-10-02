@@ -380,6 +380,24 @@ class QuantumManagerStabilizer(QuantumManager):
         for key in state_obj.keys:
             self.last_idle_time_ps_by_key[key] = now_ps
     
+    def separate(self, key: int, meas_samp: float = None) -> None:
+        """Detach a key from its shared tableau block by measuring it.
+
+        Note:
+            `meas_samp` is intentionally unused; this manager draws its own randomness.
+            Kept for interface compatibility.
+
+        Args:
+            key (int): key to detach from its joint state.
+            meas_samp (float): unused.
+        """
+        state = self.states.get(key)
+        if state is None or len(state.keys) <= 1:
+            return
+        circuit = Circuit()
+        circuit.append("M", [0])
+        self.run_circuit(circuit, [key])
+
     def set_to_zero(self, key: int | list[int]):
         """Reset one or more qubits to the |0⟩ computational basis state.
 
