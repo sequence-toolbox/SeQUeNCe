@@ -1,9 +1,4 @@
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node, BSMNode
-from sequence.components.memory import Memory
-from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
-from sequence.entanglement_management.generation import EntanglementGenerationA
-from sequence.message import Message
+import sequence as sq
 
 
 class SimpleManager:
@@ -21,16 +16,16 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self, middle: str, other: str):
-        self.owner.protocols = [EntanglementGenerationA.create(self.owner, '%s.eg' % self.owner.name, middle, other,
+        self.owner.protocols = [sq.EntanglementGenerationA.create(self.owner, f'{self.owner.name}.eg', middle, other,
                                                                self.owner.components[self.memo_name])]
 
 
-class EntangleGenNode(Node):
-    def __init__(self, name: str, tl: Timeline):
+class EntangleGenNode(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
 
         memo_name = '%s.memo' % name
-        memory = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memory = sq.Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
         memory.add_receiver(self)
         self.add_component(memory)
 
@@ -40,14 +35,14 @@ class EntangleGenNode(Node):
         memory = self.get_components_by_type("Memory")[0]
         memory.reset()
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: 'sq.Message') -> None:
         self.protocols[0].received_message(src, msg)
 
     def get(self, photon, **kwargs):
         self.send_qubit(kwargs['dst'], photon)
 
 
-def pair_protocol(node1: Node, node2: Node):
+def pair_protocol(node1: sq.Node, node2: sq.Node):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]
     node1_memo_name = node1.get_components_by_type("Memory")[0].name
@@ -57,11 +52,11 @@ def pair_protocol(node1: Node, node2: Node):
 
 
 if __name__ == '__main__':
-    tl = Timeline()
+    tl = sq.Timeline()
 
     node1 = EntangleGenNode('node1', tl)
     node2 = EntangleGenNode('node2', tl)
-    bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+    bsm_node = sq.BSMNode('bsm_node', tl, ['node1', 'node2'])
     node1.set_seed(0)
     node2.set_seed(1)
     bsm_node.set_seed(2)
@@ -69,8 +64,8 @@ if __name__ == '__main__':
     bsm = bsm_node.get_components_by_type("SingleAtomBSM")[0]
     bsm.update_detectors_params('efficiency', 1)
 
-    qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
-    qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
+    qc1 = sq.QuantumChannel('qc1', tl, attenuation=0, distance=1000)
+    qc2 = sq.QuantumChannel('qc2', tl, attenuation=0, distance=1000)
     qc1.set_ends(node1, bsm_node.name)
     qc2.set_ends(node2, bsm_node.name)
 
@@ -79,7 +74,7 @@ if __name__ == '__main__':
     for i in range(3):
         for j in range(3):
             if i != j:
-                cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+                cc = sq.ClassicalChannel(f'cc_{nodes[i].name}_{nodes[j].name}', tl, 1000, 1e8)
                 cc.set_ends(nodes[i], nodes[j].name)
 
     tl.init()

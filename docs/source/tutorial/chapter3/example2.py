@@ -1,9 +1,4 @@
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
-from sequence.components.optical_channel import ClassicalChannel
-from sequence.entanglement_management.purification import PurificationProtocol
-from sequence.message import Message
+import sequence as sq
 
 
 class SimpleManager:
@@ -24,26 +19,26 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [PurificationProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [sq.PurificationProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
-class PurifyNode(Node):
-    def __init__(self, name: str, tl: Timeline):
+class PurifyNode(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         kept_memo_name = '%s.kept_memo' % name
         meas_memo_name = '%s.meas_memo' % name
-        kept_memo = Memory('%s.kept_memo' % name, tl, 0.9, 2000, 1, -1, 500)
-        meas_memo = Memory('%s.meas_memo' % name, tl, 0.9, 2000, 1, -1, 500)
+        kept_memo = sq.Memory(f'{name}.kept_memo', tl, 0.9, 2000, 1, -1, 500)
+        meas_memo = sq.Memory(f'{name}.meas_memo', tl, 0.9, 2000, 1, -1, 500)
         self.add_component(kept_memo)
         self.add_component(meas_memo)
 
         self.resource_manager = SimpleManager(self, kept_memo_name, meas_memo_name)
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: 'sq.Message') -> None:
         self.protocols[0].received_message(src, msg)
 
 
-def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float):
+def entangle_memory(tl: sq.Timeline, memo1: sq.Memory, memo2: sq.Memory, fidelity: float):
     SQRT_HALF = 0.5 ** 0.5
     phi_plus = [SQRT_HALF, 0, 0, SQRT_HALF]
 
@@ -59,7 +54,7 @@ def entangle_memory(tl: Timeline, memo1: Memory, memo2: Memory, fidelity: float)
     memo1.fidelity = memo2.fidelity = fidelity
 
 
-def pair_protocol(node1: Node, node2: Node):
+def pair_protocol(node1: sq.Node, node2: sq.Node):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]
     kept_memo_1_name = node1.resource_manager.kept_memo_name
@@ -71,15 +66,15 @@ def pair_protocol(node1: Node, node2: Node):
 
 
 if __name__ == '__main__':
-    tl = Timeline()
+    tl = sq.Timeline()
 
     node1 = PurifyNode('node1', tl)
     node2 = PurifyNode('node2', tl)
     node1.set_seed(0)
     node2.set_seed(1)
 
-    cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
-    cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
+    cc0 = sq.ClassicalChannel('cc0', tl, 1000, 1e9)
+    cc1 = sq.ClassicalChannel('cc1', tl, 1000, 1e9)
     cc0.set_ends(node1, node2.name)
     cc1.set_ends(node2, node1.name)
 

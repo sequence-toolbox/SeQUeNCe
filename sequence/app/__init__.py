@@ -1,5 +1,5 @@
-__all__ = ["app", "random_request", "teleport_app", "request_app"]
+"""Applications supplied with SeQUeNCe."""
 
+import lazy_loader as lazy
 
-def __dir__():
-    return sorted(__all__)
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

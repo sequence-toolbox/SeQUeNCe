@@ -30,10 +30,10 @@ The robot stops work when the belt is empty or a simulation end condition is met
 Let's use DES to simulate the business hours of a store. First, we create a class for our store:
 
 ```python
-from sequence.kernel.timeline import Timeline
+import sequence as sq
 
 class Store(object):
-    def __init__(self, tl: Timeline):
+    def __init__(self, tl: sq.Timeline):
         self.opening = False
         self.timeline = tl
 
@@ -57,16 +57,15 @@ These two functions change the state of the store.
 Let's define a store that opens at 7:00.
 
 ```python
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
+import sequence as sq
 
-tl = Timeline() # create timeline
+tl = sq.Timeline() # create timeline
 tl.show_progress = False # turn of progress bar, we will address this in later tutorials.
 store = Store(tl) # create store
 
 # open store at 7:00
-open_proc = Process(store, 'open', []) # Process(object, function name: string, arguments of function: list[])
-open_event = Event(7, open_proc) # Event(occurring time: int, process: Process)
+open_proc = sq.Process(store, 'open', []) # Process(object, function name: string, arguments of function: list[])
+open_event = sq.Event(7, open_proc) # Event(occurring time: int, process: Process)
 tl.schedule(open_event) # Timeline.schedule(Event)
 ```
 
@@ -101,8 +100,8 @@ When the simulator executes an event, the simulator will update its time to the 
 An example of closing the store is shown below. 
 
 ```python
-close_proc = Process(store, 'close', [])
-close_event = Event(19, close_proc)
+close_proc = sq.Process(store, 'close', [])
+close_event = sq.Event(19, close_proc)
 tl.schedule(close_event)
 tl.run()
 print(tl.time, store.opening) # 19 False
@@ -138,25 +137,23 @@ In this example, we upgrade `Store` to open and close automatically with 12 busi
 The code of the upgraded `Store` is shown below. 
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
+import sequence as sq
 
 class Store(object):
-    def __init__(self, tl: Timeline):
+    def __init__(self, tl: sq.Timeline):
         self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
         self.opening = True
-        process = Process(self, 'close', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'close', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
         self.opening = False
-        process = Process(self, 'open', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'open', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 ```
 
@@ -168,11 +165,11 @@ Now, the `Store` can repeatedly open and close every 12 hours.
 We can then define a store with an initial state - that the store opens at 7. 
 
 ```python
-tl = Timeline()
+tl = sq.Timeline()
 tl.show_progress = False
 store = Store(tl)
-process = Process(store, 'open', [])
-event = Event(7, process)
+process = sq.Process(store, 'open', [])
+event = sq.Event(7, process)
 tl.schedule(event)
 ```
 
@@ -188,7 +185,7 @@ There are two methods to terminate simulation:
 For the first method, we can construct the object of `Timeline` with the code below:
 
 ```python
-tl = Timeline(60) # simulate system for 60 hours
+tl = sq.Timeline(60) # simulate system for 60 hours
 ```
 
 For the second method, we can call `Timeline.stop()` in the `Store.open()` and `Store.close()` methods:
@@ -199,30 +196,30 @@ For the second method, we can call `Timeline.stop()` in the `Store.open()` and `
         if self.timeline.now() >= 60:
             self.timeline.stop()
         self.opening = True
-        process = Process(self, 'close', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'close', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 ...
     def close(self) -> None:
         if self.timeline.now() >= 60:
             self.timeline.stop()
         self.opening = False
-        process = Process(self, 'open', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'open', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 ...
 ```
 
-with the above methods, we can observe the state of store after a specfic time.
+with the above methods, we can observe the state of store after a specific time.
 
 ```python
 for t in [15, 32, 52]:
-    tl = Timeline(t)
+    tl = sq.Timeline(t)
     store = Store(tl)
     print(tl.now())
     
-    process = Process(store, 'open', [])
-    event = Event(7, process)
+    process = sq.Process(store, 'open', [])
+    event = sq.Event(7, process)
     tl.schedule(event)
     
     tl.run()
@@ -235,19 +232,17 @@ for t in [15, 32, 52]:
 To help track the numerous events that could be occurring during our simulation, and errors of varying levels of severity, we can use SeQUeNCe's **logging**, based off of Python's built-in logging system. This system has 5 built-in log levels, which in increasing level of significance are DEBUG, INFO, WARNING, ERROR, and CRITICAL. **DEBUG** is detailed information about the working of the program, **INFO** is specific important steps that are occuring, **WARNING** indicates an unexpected but non-detrimental issue is occuring, **ERROR** indicates some bug is causing a method to malfunction, and **CRITICIAL** indicates that some bug is halting the ability of the program to run at all. One should note that the default is for the 'log level' to be set to WARNING such that only logs of level WARNING or above are noticed. Now, we want to include logging in the `Store` class and must decide which occurances must be at which levels. As there are really only two things to log here, we only include INFO and WARNING levels:
 
 * INFO: As the logging level meant to notate important steps, INFO will record each time the `self.opening` value changes.
-* WARNING: As the logging level with fine but unexpected occurances, WARNING will record each time the `open()` or `close()` methods are called when the store is already respectively open or closed. 
+* WARNING: As the logging level with fine but unexpected occurrences, WARNING will record each time the `open()` or `close()` methods are called when the store is already respectively open or closed. 
 
 Now, we update the `Store` class:
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
+import sequence as sq
 import sequence.utils.log as log
 
 
 class Store:
-    def __init__(self, tl: Timeline):
+    def __init__(self, tl: sq.Timeline):
         self.opening = False
         self.timeline = tl
 
@@ -256,12 +251,12 @@ class Store:
             self.timeline.stop()
         
         log.logger.info('Store being opened.')
-        if self.opening == True:
+        if self.opening:
             log.logger.warning('Store was already open.')
 
         self.opening = True
-        process = Process(self, 'close', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'close', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
@@ -269,12 +264,12 @@ class Store:
             self.timeline.stop()
 
         log.logger.info('Store being closed.')
-        if self.opening == False:
+        if not self.opening:
             log.logger.warning('Store was already closed.')
 
         self.opening = False
-        process = Process(self, 'open', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'open', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 ```
 
@@ -282,11 +277,11 @@ Assume the class `Store` is in a file named `des_example3.py`. To let the loggin
 
 ```python
 if __name__ == '__main__':
-    tl = Timeline()
+    tl = sq.Timeline()
     tl.show_progress = False
     store = Store(tl)
-    process = Process(store, 'open', [])
-    event = Event(7, process)
+    process = sq.Process(store, 'open', [])
+    event = sq.Event(7, process)
     tl.schedule(event)
     
     log_filename = 'store.log'

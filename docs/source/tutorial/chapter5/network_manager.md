@@ -30,7 +30,7 @@ The forwarding protocol reads the forwarding table written by the **routing** pr
 When constructing the network manager, the `NewNetworkManager` function of the `sequence.network_management.network_manager` module is used. This function will automatically create the default reservation and routing protocol stack and install it into the network manager.
 
 ```python
-def NewNetworkManager(owner: "QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "NetworkManager":
+def NewNetworkManager(owner: "sq.QuantumRouter", memory_array_name: str, component_templates: dict = {}) -> "sq.NetworkManager":
     """Function to create a new network manager.
 
     Will create a network manager with default protocol stack.
@@ -233,11 +233,11 @@ The `RouterNetTopo` will also create a timeline with 2 seconds of simulation tim
 We use the function `get_timeline()` to get the timeline for the simulation.
 
 ```python
-from sequence.topology.router_net_topo import RouterNetTopo
+import sequence as sq
 
 
 network_config = "star_network.json"
-network_topo = RouterNetTopo(network_config)
+network_topo = sq.RouterNetTopo(network_config)
 tl = network_topo.get_timeline()
 ```
 
@@ -255,13 +255,13 @@ For quantum and classical connections, the `get_qchannels` and `get_cchannels`  
 These provide an iterable list of all connections in the network that may be edited directly.
 
 ```python
-def set_parameters(topology: RouterNetTopo):
+def set_parameters(topology: sq.RouterNetTopo):
     # set memory parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
-    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    for node in topology.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
         memory_array = node.get_components_by_type("MemoryArray")[0]
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
@@ -272,7 +272,7 @@ def set_parameters(topology: RouterNetTopo):
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
-    for node in topology.get_nodes_by_type(RouterNetTopo.BSM_NODE):
+    for node in topology.get_nodes_by_type(sq.RouterNetTopo.BSM_NODE):
         bsm = node.get_components_by_type("SingleAtomBSM")[0]
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
@@ -315,7 +315,7 @@ start_node_name = "end1"
 end_node_name = "end2"
 node1 = node2 = None
 
-for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+for router in network_topo.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
     if router.name == start_node_name:
         node1 = router
     elif router.name == end_node_name:

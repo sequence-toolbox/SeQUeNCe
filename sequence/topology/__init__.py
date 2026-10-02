@@ -1,4 +1,5 @@
-__all__ = ['node', 'topology', 'qkd_topo', 'router_net_topo', 'dqc_net_topo']
+"""Network nodes and topology loaders."""
 
-def __dir__():
-    return sorted(__all__)
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)
