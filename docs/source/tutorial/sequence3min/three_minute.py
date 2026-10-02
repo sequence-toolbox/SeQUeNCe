@@ -2,10 +2,11 @@
 """
 import sequence as sq
 from sequence import constants
+
 if __name__ == "__main__":
 
-    sq.EntanglementGenerationA.set_global_type(sq.constants.SINGLE_HERALDED)
-    sq.EntanglementGenerationB.set_global_type(sq.constants.SINGLE_HERALDED)
+    sq.EntanglementGenerationA.set_global_type(constants.SINGLE_HERALDED)
+    sq.EntanglementGenerationB.set_global_type(constants.SINGLE_HERALDED)
 
     # assume the current working directory is the SeQUeNCe repository root
     network_topo = sq.RouterNetTopo(config_source="docs/source/tutorial/sequence3min/two_node.json")
