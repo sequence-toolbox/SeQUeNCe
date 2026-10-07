@@ -15,17 +15,10 @@ To start, we will create a constructor for the application that requires
 We will also need a function that starts the application's behavior (a method named `start`). In this case, we will make a request to the network manager (using properties specified in the constructor) and schedule another `start` event in the future. The request uses the same interface described in tutorial 5.
 
 ```python
-from sequence.kernel.process import Process
-from sequence.kernel.event import Event
-from sequence.topology.router_net_topo import RouterNetTopo
-
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from sequence.topology.node import QuantumRouter
-
+import sequence as sq
 
 class PeriodicApp:
-    def __init__(self, node: "QuantumRouter", other: str, memory_size=25, target_fidelity=0.9):
+    def __init__(self, node: 'sq.QuantumRouter', other: str, memory_size=25, target_fidelity=0.9):
         self.node = node
         self.node.set_app(self)
         self.other = other
@@ -40,8 +33,8 @@ class PeriodicApp:
                    target_fidelity=self.target_fidelity)
         
         # schedule future start
-        process = Process(self, "start", [])
-        event = Event(now + 2e12, process)
+        process = sq.Process(self, "start", [])
+        event = sq.Event(now + 2e12, process)
         self.node.timeline.schedule(event)
 ```
 
@@ -56,13 +49,13 @@ The other method we require, `get_memory`, is called by the resource manager whe
 ```python
 ...
 
-    def get_reserve_res(self, reservation: "Reservation", result: bool):
+    def get_reserve_res(self, reservation: "sq.Reservation", result: bool):
         if result:
             print("Reservation approved at time", self.node.timeline.now() * 1e-12)
         else:
             print("Reservation failed at time", self.node.timeline.now() * 1e-12)
 
-    def get_memory(self, info: "MemoryInfo"):
+    def get_memory(self, info: "sq.MemoryInfo"):
         if info.state == "ENTANGLED" and info.remote_node == self.other:
             print("\t{} app received memory {} ENTANGLED at time {}".format(self.node.name, info.index, self.node.timeline.now() * 1e-12))
             self.node.resource_manager.update(None, info.memory, "RAW")
@@ -111,7 +104,7 @@ With all of the tools we have seen through the tutorials, creating our network a
 network_config = "star_network.json"
 num_periods = 5
 
-network_topo = RouterNetTopo(network_config)
+network_topo = sq.RouterNetTopo(network_config)
 tl = network_topo.get_timeline()
 tl.stop_time = 2e12 * num_periods
 tl.show_progress = False
@@ -120,7 +113,7 @@ start_node_name = "end1"
 end_node_name = "end2"
 node1 = node2 = None
 
-for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+for router in network_topo.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
     if router.name == start_node_name:
         node1 = router
     elif router.name == end_node_name:

@@ -9,25 +9,25 @@ import warnings
 from math import sqrt
 import random
 import math
-from numpy import array, kron, identity, zeros, trace, outer, eye, clip
+import numpy as np
 from scipy.linalg import LinAlgWarning, sqrtm
 from ..constants import EPSILON
 
 
-a = array([[0, 1], [0, 0]])
-a_dag = array([[0, 0], [1, 0]])
+a = np.array([[0, 1], [0, 0]])
+a_dag = np.array([[0, 0], [1, 0]])
 
-povm_0 = (1/2) * (kron(a_dag @ a, eye(2)) - 1j*kron(a, a_dag) + 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
-povm_1 = (1/2) * (kron(a_dag @ a, eye(2)) + 1j*kron(a, a_dag) - 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
+povm_0 = 1/2 * (np.kron(a_dag @ a, np.eye(2)) - 1j*np.kron(a, a_dag) + 1j*np.kron(a_dag, a) + np.kron(np.eye(2), a_dag @ a))
+povm_1 = 1/2 * (np.kron(a_dag @ a, np.eye(2)) + 1j*np.kron(a, a_dag) - 1j*np.kron(a_dag, a) + np.kron(np.eye(2), a_dag @ a))
 
 
 @lru_cache(maxsize=1000)
 def measure_state_with_cache(state: tuple[complex, complex], basis: tuple[tuple[complex]]) -> float:
 
-    state = array(state)
-    u = array(basis[0], dtype=complex)
+    state = np.array(state)
+    u = np.array(basis[0], dtype=complex)
     # measurement operator
-    M0 = outer(u.conj(), u)
+    M0 = np.outer(u.conj(), u)
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
@@ -36,25 +36,25 @@ def measure_state_with_cache(state: tuple[complex, complex], basis: tuple[tuple[
 
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], 
-                                       state_index: int, num_states: int) -> tuple[array, array, float]:
+                                       state_index: int, num_states: int) -> tuple[np.ndarray, np.ndarray, float]:
 
-    state = array(state)
-    u = array(basis[0], dtype=complex)
-    v = array(basis[1], dtype=complex)
+    state = np.array(state)
+    u = np.array(basis[0], dtype=complex)
+    v = np.array(basis[1], dtype=complex)
     # measurement operator
-    M0 = outer(u.conj(), u)
-    M1 = outer(v.conj(), v)
+    M0 = np.outer(u.conj(), u)
+    M1 = np.outer(v.conj(), v)
 
     # generate projectors
     projector0 = [1]
     projector1 = [1]
     for i in range(num_states):
         if i == state_index:
-            projector0 = kron(projector0, M0)
-            projector1 = kron(projector1, M1)
+            projector0 = np.kron(projector0, M0)
+            projector1 = np.kron(projector1, M1)
         else:
-            projector0 = kron(projector0, identity(2))
-            projector1 = kron(projector1, identity(2))
+            projector0 = np.kron(projector0, np.identity(2))
+            projector1 = np.kron(projector1, np.identity(2))
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
@@ -74,16 +74,16 @@ def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple
 
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache(state: tuple[complex], basis: tuple[tuple[complex]], 
-                                length_diff: int) -> tuple[list[array], list[float]]:
+                                length_diff: int) -> tuple[list[np.ndarray], list[float]]:
 
-    state = array(state)
+    state = np.array(state)
     # construct measurement operators, projectors, and probabilities of measurement
     projectors = [None] * len(basis)
     probabilities = [0] * len(basis)
     for i, vector in enumerate(basis):
-        vector = array(vector, dtype=complex)
-        M = outer(vector.conj(), vector)  # measurement operator
-        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
+        vector = np.array(vector, dtype=complex)
+        M = np.outer(vector.conj(), vector)  # measurement operator
+        projectors[i] = np.kron(M, np.identity(2 ** length_diff))  # projector
         probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
@@ -101,8 +101,8 @@ def measure_multiple_with_cache(state: tuple[complex], basis: tuple[tuple[comple
 @lru_cache(maxsize=1000)
 def measure_state_with_cache_ket(state: tuple[complex, complex]) -> float:
 
-    state = array(state)
-    M0 = array([[1, 0], [0, 0]], dtype=complex)
+    state = np.array(state)
+    M0 = np.array([[1, 0], [0, 0]], dtype=complex)
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().T @ M0 @ state).real
@@ -111,23 +111,23 @@ def measure_state_with_cache_ket(state: tuple[complex, complex]) -> float:
 
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_ket(state: tuple[complex], state_index: int, 
-                                           num_states: int) -> tuple[array, array, float]:
+                                           num_states: int) -> tuple[np.ndarray, np.ndarray, float]:
 
-    state = array(state)
+    state = np.array(state)
     # generate measurement operators. measure qubit at state_index, with the measured qubit traced out
     operator0 = [1]
     operator1 = [1]
     for i in range(num_states):
         if i == state_index:
-            operator0 = kron(operator0, [1, 0])
-            operator1 = kron(operator1, [0, 1])
+            operator0 = np.kron(operator0, [1, 0])
+            operator1 = np.kron(operator1, [0, 1])
         else:
-            operator0 = kron(operator0, identity(2))
-            operator1 = kron(operator1, identity(2))
+            operator0 = np.kron(operator0, np.identity(2))
+            operator1 = np.kron(operator1, np.identity(2))
 
     # probability of measuring basis[0]
     prob_0 = (state.conj().T @ operator0.conj().T @ operator0 @ state).real
-    prob_0 = clip(prob_0, 0, 1)
+    prob_0 = np.clip(prob_0, 0, 1)
     prob_1 = 1 - prob_0
 
     state0 = (operator0 @ state) / sqrt(prob_0) if prob_0 > EPSILON else None
@@ -138,18 +138,18 @@ def measure_entangled_state_with_cache_ket(state: tuple[complex], state_index: i
 
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_ket(state: tuple[complex], num_states: int, 
-                                    length_diff: int) -> tuple[list[array], list[float]]:
+                                    length_diff: int) -> tuple[list[np.ndarray], list[float]]:
 
-    state = array(state)
+    state = np.array(state)
     basis_count = 2 ** num_states
 
     # construct measurement operators, projectors, and probabilities of measurement
     projectors = [None] * basis_count
     probabilities = [0] * basis_count
     for i in range(basis_count):
-        M = zeros((1, basis_count), dtype=complex)  # measurement operator
+        M = np.zeros((1, basis_count), dtype=complex)  # measurement operator
         M[0, i] = 1
-        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
+        projectors[i] = np.kron(M, np.identity(2 ** length_diff))  # projector
         probabilities[i] = (state.conj().T @ projectors[i].T @ projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
@@ -170,33 +170,33 @@ def measure_multiple_with_cache_ket(state: tuple[complex], num_states: int,
 @lru_cache(maxsize=1000)
 def measure_state_with_cache_density(state: tuple[tuple[complex, complex]]) -> float:
 
-    state = array(state)
-    M0 = array([[1, 0], [0, 0]], dtype=complex)
+    state = np.array(state)
+    M0 = np.array([[1, 0], [0, 0]], dtype=complex)
 
     # probability of measuring basis[0]
-    prob_0 = trace(state @ M0).real
+    prob_0 = np.trace(state @ M0).real
     return prob_0
 
 
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_density(state: tuple[tuple[complex]], state_index: int, 
-                                               num_states: int) -> tuple[array, array, float]:
+                                               num_states: int) -> tuple[np.ndarray, np.ndarray, float]:
 
-    state = array(state)
+    state = np.array(state)
 
     # generate projectors
     projector0 = [1]
     projector1 = [1]
     for i in range(num_states):
         if i == state_index:
-            projector0 = kron(projector0, [[1, 0], [0, 0]])
-            projector1 = kron(projector1, [[0, 0], [0, 1]])
+            projector0 = np.kron(projector0, [[1, 0], [0, 0]])
+            projector1 = np.kron(projector1, [[0, 0], [0, 1]])
         else:
-            projector0 = kron(projector0, identity(2))
-            projector1 = kron(projector1, identity(2))
+            projector0 = np.kron(projector0, np.identity(2))
+            projector1 = np.kron(projector1, np.identity(2))
 
     # probability of measuring basis[0]
-    prob_0 = trace(state @ projector0).real
+    prob_0 = np.trace(state @ projector0).real
 
     if prob_0 >= 1:
         state1 = None
@@ -213,19 +213,19 @@ def measure_entangled_state_with_cache_density(state: tuple[tuple[complex]], sta
 
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_density(state: tuple[tuple[complex]], 
-                                        num_states: int, length_diff: int) -> tuple[list[array], list[float]]:
+                                        num_states: int, length_diff: int) -> tuple[list[np.ndarray], list[float]]:
 
-    state = array(state)
+    state = np.array(state)
     basis_count = 2 ** num_states
 
     # construct measurement operators, projectors, and probabilities of measurement
     projectors = [None] * basis_count
     probabilities = [0] * basis_count
     for i in range(basis_count):
-        M = zeros((basis_count, basis_count), dtype=complex)  # measurement operator
+        M = np.zeros((basis_count, basis_count), dtype=complex)  # measurement operator
         M[i, i] = 1
-        projectors[i] = kron(M, identity(2 ** length_diff))  # projector
-        probabilities[i] = trace(state @ projectors[i]).real
+        projectors[i] = np.kron(M, np.identity(2 ** length_diff))  # projector
+        probabilities[i] = np.trace(state @ projectors[i]).real
         if probabilities[i] < 0:
             probabilities[i] = 0
         if probabilities[i] > 1:
@@ -244,12 +244,12 @@ def measure_multiple_with_cache_density(state: tuple[tuple[complex]],
 
 @lru_cache(maxsize=1000)
 def measure_state_with_cache_fock_density(state: tuple[tuple[complex]], 
-                                          povms: tuple[tuple[tuple[complex]]]) -> tuple[list[array], list[float]]:
-    state = array(state)
-    povms = [array(povm) for povm in povms]
+                                          povms: tuple[tuple[tuple[complex]]]) -> tuple[list[np.ndarray], list[float]]:
+    state = np.array(state)
+    povms = [np.array(povm) for povm in povms]
 
     # probabilities of getting different outcomes according to POVM operators
-    prob_list = [trace(state @ povm).real for povm in povms]
+    prob_list = [np.trace(state @ povm).real for povm in povms]
     state_list = []
 
     # get output states
@@ -270,7 +270,7 @@ def measure_state_with_cache_fock_density(state: tuple[tuple[complex]],
 @lru_cache(maxsize=1000)
 def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]], system_index: int, 
                                                     num_systems: int, povms: tuple[tuple[tuple[complex]]], 
-                                                    truncation: int = 1) -> tuple[list[array], list[float]]:
+                                                    truncation: int = 1) -> tuple[list[np.ndarray], list[float]]:
 
     """Measure one subsystem of a larger composite system.
 
@@ -285,24 +285,24 @@ def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]]
         truncation (int): fock space truncation, 1 for qubit system (default 1).
 
     Returns:
-        tuple[list[array], list[float]]: tuple with two sub-lists.
+        tuple[list[np.array], list[float]]: tuple with two sub-lists.
             The first lists each output state, corresponding with the measurement of each POVM.
             The second lists the probability for each measurement.
     """
 
-    state = array(state)
-    povms = [array(povm) for povm in povms]
+    state = np.array(state)
+    povms = [np.array(povm) for povm in povms]
 
     # generate POVM operators on total Hilbert space
     povm_list = []
     left_dim = (truncation + 1) ** system_index
     right_dim = (truncation + 1) ** (num_systems - system_index - 1)
     for povm in povms:
-        povm_tot = kron(kron(identity(left_dim), povm), identity(right_dim))
+        povm_tot = np.kron(np.kron(np.identity(left_dim), povm), np.identity(right_dim))
         povm_list.append(povm_tot)
 
     # list of probabilities of getting different outcomes from POVM
-    prob_list = [trace(state @ povm).real for povm in povm_list]
+    prob_list = [np.trace(state @ povm).real for povm in povm_list]
     state_list = []
 
     for i in range(len(prob_list)):
@@ -322,7 +322,7 @@ def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]]
 @lru_cache(maxsize=1000)
 def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indices: tuple[int], 
                                              num_systems: int, povms: tuple[tuple[tuple[complex]]], 
-                                             truncation: int = 1) -> tuple[list[array], list[float]]:
+                                             truncation: int = 1) -> tuple[list[np.ndarray], list[float]]:
 
     """Measure multiple subsystems of a larger composite system.
 
@@ -336,7 +336,7 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
 
     E.g. For a total system consisted of 4 subsystems (0, 1, 2, 3) each with dimension d,
     if the entangling measurement happens on (1, 2), then measurement operators on total space will be constructed as
-        O_tot = kron(kron(identity(d), O), identity(d)),
+        O_tot = np.kron(np.kron(np.identity(d), O), np.identity(d)),
     where the measurement operator on (1, 2) subspace needs to be generated beforehand to feed in the function.
 
     Args:
@@ -347,13 +347,13 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
         truncation (int): fock space truncation, 1 for qubit system (default 1).
 
     Returns:
-        tuple[list[array], list[float]]: tuple with two sub-lists.
+        tuple[list[np.ndarray], list[float]]: tuple with two sub-lists.
             The first lists each output state, corresponding with the measurement of each POVM.
             The second lists the probability for each measurement.
     """
 
-    state = array(state)
-    povms = [array(povm) for povm in povms]
+    state = np.array(state)
+    povms = [np.array(povm) for povm in povms]
 
     # judge if elements in `indices` are consecutive
     init_meas_sys_idx = min(indices)
@@ -366,11 +366,11 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
     left_dim = (truncation + 1) ** init_meas_sys_idx
     right_dim = (truncation + 1) ** (num_systems - fin_meas_sys_idx - 1)
     for povm in povms:
-        povm_tot = kron(kron(identity(left_dim), povm), identity(right_dim))
+        povm_tot = np.kron(np.kron(np.identity(left_dim), povm), np.identity(right_dim))
         povm_list.append(povm_tot)
 
     # list of probabilities of getting different outcomes from POVM
-    prob_list = [trace(state @ povm).real for povm in povm_list]
+    prob_list = [np.trace(state @ povm).real for povm in povm_list]
     state_list = []
 
     for i in range(len(prob_list)):
@@ -390,7 +390,7 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
 
 @lru_cache(maxsize=1000)
 def density_partial_trace(state: tuple[tuple[complex]], indices: tuple[int], 
-                          num_systems: int, truncation: int = 1) -> array:
+                          num_systems: int, truncation: int = 1) -> np.ndarray:
 
     """Traces out subsystems systems at given indices.
 
@@ -402,15 +402,15 @@ def density_partial_trace(state: tuple[tuple[complex]], indices: tuple[int],
         truncation (int): fock space truncation, 1 for qubit system (default 1).
 
     Returns:
-        array: output state with reduced number of subsystems `num_systems - len(indices)`.
+        np.ndarray: output state with reduced number of subsystems `num_systems - len(indices)`.
     """
 
-    temp = array(state)
+    temp = np.array(state)
 
     for i, idx in enumerate(indices):
         offset = num_systems - i
         temp = temp.reshape((truncation+1,) * offset * 2)
-        temp = trace(temp, axis1=(idx-i), axis2=(offset+idx-i))
+        temp = np.trace(temp, axis1=(idx-i), axis2=(offset+idx-i))
 
     output_dim = (truncation + 1) ** (num_systems - len(indices))
     output_state = temp.reshape((output_dim, output_dim))
@@ -471,7 +471,7 @@ def pretty_ket(vector, precision: int = 4, tolerance: float = EPSILON) -> str:
            pretty_ket(vector) -- (0.7071) |0⟩ + (0.7071) |3⟩
 
     Args:
-        vector (array-like): The state vector to convert.
+        vector (np.ndarray-like): The state vector to convert.
         precision (int): The number of decimal places to round the coefficients.
         tolerance (float): The tolerance for considering a coefficient as zero.
 
@@ -479,7 +479,7 @@ def pretty_ket(vector, precision: int = 4, tolerance: float = EPSILON) -> str:
         str: A pretty-printed ket string representation of the state vector.
     """
     terms = []
-    vector = array(vector, dtype=complex)
+    vector = np.array(vector, dtype=complex)
     for k, a in enumerate(vector):
         if abs(a) < tolerance: 
             continue

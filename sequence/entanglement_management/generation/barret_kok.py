@@ -226,12 +226,8 @@ class BarretKokA(EntanglementGenerationA, QuantumCircuitMixin):
         self.memory.entangled_memory['node_id'] = self.remote_node_name
         self.memory.entangled_memory['memo_id'] = self.remote_memo_id
         self.memory.fidelity = self.memory.raw_fidelity
-        metrics.record(
-            EventTypes.EG_SUCCESS,
-            self.owner.name,
-            remote_node=self.remote_node_name,
-            fidelity=self.fidelity,
-        )
+        metrics.record(EventTypes.EG_SUCCESS, self.owner.name, 
+                       remote_node=self.remote_node_name, fidelity=self.fidelity)
         self.update_resource_manager(self.memory, MemoryInfo.ENTANGLED)
 
 

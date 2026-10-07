@@ -3,7 +3,17 @@
 from __future__ import annotations
 
 from .event_types import EventTypes
-from .metric_types import CounterMetric, DeliveryTimeMetric, EventAttributeMetric, Metric, ThroughputMetric
+from .metric_types import (
+    BellPairUtilizationMetric,
+    CounterMetric,
+    EventAttributeMetric,
+    JainFairnessIndexMetric,
+    MemoryUtilizationRatioMetric,
+    Metric,
+    ReservationSuccessRateMetric,
+    ThroughputMetric,
+    TimeToServeMetric,
+)
 from .registry import register_metric
 
 # Entanglement Management Metrics
@@ -37,32 +47,72 @@ SWAPPED_FIDELITIES_METRIC = EventAttributeMetric(
 )
 
 # Network Management Metrics
-RESERVATION_APPROVAL_RATE = CounterMetric(
-    prefix="reservation_approval",
+ADMISSION_RATE_METRIC = CounterMetric(
+    prefix="admission",
     failure_event=EventTypes.RESERVATION_REJECTED,
     success_event=EventTypes.RESERVATION_APPROVED,
-    rate_field="reservation_approval_rate",
+    rate_field="admission_rate",
+)
+ADMISSION_RATE_METRIC.__doc__ = """Admission rate = n_approved / (n_approved + n_rejected).
+
+In SeQUeNCe, n_approved is ``RESERVATION_APPROVED`` and n_rejected is
+``RESERVATION_REJECTED``. The collected ``admission_success_rate`` is the
+admission rate (fraction of reservation requests that are approved).
+
+Defined in C. Cicconetti, M. Conti and A. Passarella, "Quality of Service
+in Quantum Networks," in IEEE Network, vol. 36, no. 5, pp. 24-31,
+September/October 2022, doi: 10.1109/MNET.001.2200163.
+"""
+RESERVATION_SUCCESS_RATE_METRIC = ReservationSuccessRateMetric(
+    key="reservation_success_rate",
+    approved_event=EventTypes.RESERVATION_APPROVED,
+    delivery_event=EventTypes.DELIVERY,
+)
+JAINS_FAIRNESS_INDEX_METRIC = JainFairnessIndexMetric(
+    key="jains_fairness_index",
+    approved_event=EventTypes.RESERVATION_APPROVED,
+    delivery_event=EventTypes.DELIVERY,
 )
 
 # Resource Management Metrics
+MEMORY_UTILIZATION_RATIO_METRIC = MemoryUtilizationRatioMetric(
+    key="memory_utilization_ratio",
+    update_event=EventTypes.MEMORY_UPDATE,
+)
+MEMORY_DECOHERENCE_RATE_METRIC = CounterMetric(
+    prefix="memory_decoherence",
+    failure_event=EventTypes.EG_SUCCESS,
+    success_event=EventTypes.MEMORY_EXPIRED,
+    rate_field="memory_decoherence_rate",
+)
+MEMORY_DECOHERENCE_RATE_METRIC.__doc__ = """Memory decoherence rate = n_expired / (n_expired + n_eg_success).
+
+In SeQUeNCe, n_expired is ``MEMORY_EXPIRED`` and n_eg_success is
+``EG_SUCCESS``. Expiry is the counted ``success_event`` so the collected
+``memory_decoherence_rate`` is the decoherence loss fraction.
+
+C. Tian et al., "RADAR-Q: Resource-Aware Distributed Asynchronous Routing
+for Entanglement Distribution in Multi-Tenant Quantum Networks,"
+arXiv:2603.27570, 2026.
+"""
 
 # Application Metrics
 THROUGHPUT_METRIC = ThroughputMetric(
     key="app_throughput",
     delivery_event=EventTypes.DELIVERY,
 )
-DELIVERY_TIME_METRIC = DeliveryTimeMetric(
-    key="delivery_time",
+TIME_TO_SERVE_METRIC = TimeToServeMetric(
+    key="time_to_serve",
+    delivery_event=EventTypes.DELIVERY,
+)
+BELL_PAIR_UTILIZATION_METRIC = BellPairUtilizationMetric(
+    key="bell_pair_utilization",
+    pair_event=EventTypes.EG_SUCCESS,
     delivery_event=EventTypes.DELIVERY,
 )
 
-
 def register_builtin_metrics() -> None:
-    """Register all built-in metrics with the global registry.
-
-    Registers entanglement generation, purification, swapping, throughput,
-    fidelity, and delivery-time metrics defined in this module.
-    """
+    """Register all built-in metrics with the global registry."""
 
     BUILTIN_METRICS: list[Metric] = [
         EG_METRIC,
@@ -70,8 +120,14 @@ def register_builtin_metrics() -> None:
         ES_METRIC,
         PURIFIED_FIDELITIES_METRIC,
         SWAPPED_FIDELITIES_METRIC,
+        ADMISSION_RATE_METRIC,
+        RESERVATION_SUCCESS_RATE_METRIC,
+        JAINS_FAIRNESS_INDEX_METRIC,
+        MEMORY_UTILIZATION_RATIO_METRIC,
+        MEMORY_DECOHERENCE_RATE_METRIC,
         THROUGHPUT_METRIC,
-        DELIVERY_TIME_METRIC,
+        TIME_TO_SERVE_METRIC,
+        BELL_PAIR_UTILIZATION_METRIC,
     ]
 
     for metric in BUILTIN_METRICS:

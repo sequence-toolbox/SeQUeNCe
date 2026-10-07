@@ -416,8 +416,7 @@ class Cascade(StackProtocol):
 
         log.logger.info(self.name + f' state={self.state} generate_key, keylen={keylen}, keynum={frame_num}')
         if self.role == 1:
-            raise Exception(
-                f"Cascase.generate_key() called on receiver '{self.name}'")
+            raise Exception(f"Cascade.generate_key() called on receiver '{self.name}'")
 
         if self.state == 0:
             log.logger.debug(self.name + ' generate_key with state 0')

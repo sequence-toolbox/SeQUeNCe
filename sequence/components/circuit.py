@@ -3,68 +3,48 @@
 This module introduces the QuantumCircuit class. The qutip library is used to calculate the unitary matrix of a circuit.
 """
 
-from math import e, pi, sqrt
-
 import numpy as np
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import gate_sequence_product
 from qutip import Qobj
 
+from ..kernel.quantum_gates import gate_matrix
+
 GATE_INFO_TYPE = list[str | list[int] | float]
 
 
 def x_gate():
-    mat = np.array([[0, 1],
-                    [1, 0]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("x"), dims=[[2], [2]])
 
 
 def y_gate():
-    mat = np.array([[0, -1.j],
-                    [1.j, 0]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("y"), dims=[[2], [2]])
 
 
 def z_gate():
-    mat = np.array([[1, 0],
-                    [0, -1]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("z"), dims=[[2], [2]])
 
 
 def s_gate():
-    mat = np.array([[1.,   0],
-                    [0., 1.j]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("s"), dims=[[2], [2]])
 
 def sdg_gate():
-    mat = np.array([[1.,   0],
-                    [0., -1.j]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("sdg"), dims=[[2], [2]])
 
 def t_gate():
-    mat = np.array([[1.,   0],
-                    [0., e ** (1.j * (pi / 4))]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("t"), dims=[[2], [2]])
 
 def root_iZ_gate():
-    mat = 1/sqrt(2)*np.array([[1.+1.j,   0],
-                              [0, 1.-1.j]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("root_iZ"), dims=[[2], [2]])
 
 def minus_root_iZ_gate():
-    mat = 1/sqrt(2)*np.array([[1.-1.j,   0],
-                              [0, 1.+1.j]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("minus_root_iZ"), dims=[[2], [2]])
 
 def root_iY_gate():
-    mat = 1/sqrt(2)*np.array([[1.,   1.],
-                              [-1., 1.]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("root_iY"), dims=[[2], [2]])
 
 def minus_root_iY_gate():
-    mat = 1/sqrt(2)*np.array([[1.,   -1.],
-                              [1., 1.]])
-    return Qobj(mat, dims=[[2], [2]])
+    return Qobj(gate_matrix("minus_root_iY"), dims=[[2], [2]])
 
 
 def validator(func):

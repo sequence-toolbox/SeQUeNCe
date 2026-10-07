@@ -129,7 +129,8 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
 
         Args:
             name (str): name of the specific type of Entanglement Swapping A protocol.
-            protocol_class (type[EntanglementSwappingA] | None): the class of the specific type of Entanglement Swapping A protocol. If None, the decorated class will be registered.
+            protocol_class (type[EntanglementSwappingA] | None): the class of the specific type of Entanglement 
+                                                Swapping A protocol. If None, the decorated class will be registered.
 
         Returns:
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
@@ -196,6 +197,10 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
+        Note:
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility.
+
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
@@ -241,6 +246,7 @@ class EntanglementSwappingA(EntanglementProtocol, ABC):
             Will invoke `release_remote_protocol` or `release_remote_memory` method of resource manager.
         """
         assert self.is_ready() is False
+        self.record_memory_expired(memory)
         if self.left_protocol_name:
             self.release_remote_protocol(self.left_node)
         else:
@@ -318,7 +324,8 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
 
         Args:
             name (str): name of the specific type of Entanglement Swapping B protocol.
-            protocol_class (type[EntanglementSwappingB] | None): the class of the specific type of Entanglement Swapping B protocol. If None, the decorated class will be registered.
+            protocol_class (type[EntanglementSwappingB] | None): the class of the specific type of 
+                                Entanglement Swapping B protocol. If None, the decorated class will be registered.
 
         Returns:
             If protocol_class is None, returns a decorator function. Otherwise, returns None.
@@ -354,6 +361,10 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Method to set other entanglement protocol instance.
 
+        Note:
+            ``memories`` is intentionally unused; swapping uses the memos it
+            already holds. Kept for interface compatibility.
+
         Args:
             protocol (str): other protocol name.
             node (str): other node name.
@@ -375,6 +386,7 @@ class EntanglementSwappingB(EntanglementProtocol, ABC):
             Will update memory in attached resource manager.
         """
 
+        self.record_memory_expired(memory)
         self.update_resource_manager(self.memory, MemoryInfo.RAW)
 
     def release(self) -> None:

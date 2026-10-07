@@ -1,3 +1,5 @@
-__all__ = ['encoding', 'log', 'config_generator_cli', 'graphs', 'nx_converter', 'metrics']
-def __dir__():
-    return sorted(__all__)
+"""Common utility modules."""
+
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

@@ -1,5 +1,5 @@
-__all__ = ['beam_splitter', 'bsm', 'detector', 'interferometer', 'light_source', 'memory', 'optical_channel', 'photon',
-           'spdc_lens', 'switch', 'circuit', 'transmon', 'transducer']
+"""Public hardware components for quantum-network simulations."""
 
-def __dir__():
-    return sorted(__all__)
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

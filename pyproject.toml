@@ -1,6 +1,6 @@
 [project]
 name = "sequence"
-version = "1.0.0"
+version = "1.2.0"
 authors = [
     { name = "Xiaoliang Wu, Joaquin Chung, Alexander Kolar, Alexander Kiefer, Eugene Wang, Tian Zhong, Rajkumar Kettimuthu, Martin Suchara, Robert Hayek, Ansh Singal, Caitao Zhan", email = "czhan@anl.gov" }
 ]
@@ -19,21 +19,15 @@ classifiers = [
 ]
 keywords = ["quantum", "network", "discrete", "event", "simulator"]
 dependencies = [
-    "dash>=3.3.0",
-    "dash-bootstrap-components>=2.0.4",
-    "dash-core-components>=2.0.0",
-    "dash-cytoscape>=1.0.2",
-    "dash-html-components>=2.0.0",
-    "dash-table>=5.0.0",
     "gmpy2>=2.2.2",
     "graphviz>=0.21",
     "ipywidgets>=8.1.8",
     "jupyterlab>=4.5.0",
+    "lazy-loader>=0.6",
     "matplotlib>=3.10.7",
     "networkx>=3.6.1",
     "numpy>=2.3.5",
     "pandas>=2.3.3",
-    "plotly>=6.5.0",
     "pyyaml>=6.0.3",
     "qutip>=5.2.2",
     "qutip-qip>=0.4.1",
@@ -41,14 +35,14 @@ dependencies = [
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",
     "typer>=0.24.1",
-    "stim>=1.15"
+    "stim>=1.15",
 ]
 
 [project.scripts]
 generate-topology = "sequence.utils.config_generator_cli:app"
 
 [build-system]
-requires = ["uv_build>=0.11.11,<0.12"]
+requires = ["uv_build>=0.11.11,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -115,19 +109,28 @@ variable_start_string = "{{"
 variable_end_string = "}}"
 comment_start_string = "{#"
 comment_end_string = "#}"
-trim_blocks = false
-lstrip_blocks = false
+trim_blocks = true
+lstrip_blocks = true
 newline_sequence = "\n"
-keep_trailing_newline = false
+keep_trailing_newline = true
 extensions = []
 autoescape = false
 
 [tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
-other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]
-allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", "refactor", "test"]
+patch_tags = [
+    "fix",
+    "docs",
+    "test",
+    "ci",
+    "refactor",
+    "perf",
+    "chore",
+    "revert",
+]
+allowed_tags = ["feat", "fix", "perf", "build", "ci", "docs", "style", "refactor", "test"]
+other_allowed_tags = ["chore"]
+
 default_bump_level = 0
 parse_squash_commits = true
 ignore_merge_commits = true
-

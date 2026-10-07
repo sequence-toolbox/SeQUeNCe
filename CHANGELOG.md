@@ -8,6 +8,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- version list -->
 
+## v1.2.0 (2026-09-12)
+
+### Continuous Integration
+
+- Finalize generated changelog format
+  ([#455](https://github.com/sequence-toolbox/SeQUeNCe/pull/455),
+  [`3fef6f7`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3fef6f77f4496543e5afd971d4718510b88bb2bf))
+
+### Documentation
+
+- Clarify that memories arg is intentionally unused in swapping set_others (refs #170)
+  ([#391](https://github.com/sequence-toolbox/SeQUeNCe/pull/391),
+  [`14cef6e`](https://github.com/sequence-toolbox/SeQUeNCe/commit/14cef6e91ce226531ec3544741f6b15d4925ef0f))
+
+### Features
+
+- Add DEJMPS BDS purification protocol
+  ([#439](https://github.com/sequence-toolbox/SeQUeNCe/pull/439),
+  [`3cfe6c7`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3cfe6c762b15b4bc145232a73a2eb48d51e8503e))
+
+- Add new module utils.classical_delay
+  ([#448](https://github.com/sequence-toolbox/SeQUeNCe/pull/448),
+  [`183b3cc`](https://github.com/sequence-toolbox/SeQUeNCe/commit/183b3cc83636a6e2fd6173492125f297e16b7340))
+
+- Metrics tracking for resource management + application, metrics from literature
+  ([#438](https://github.com/sequence-toolbox/SeQUeNCe/pull/438),
+  [`a108fae`](https://github.com/sequence-toolbox/SeQUeNCe/commit/a108faefcc1fbe9954421627718a6a9a469a3950))
+
+### Refactoring
+
+- Faster quantum ket manager and remove QuantumManagerDenseQubit
+  ([#443](https://github.com/sequence-toolbox/SeQUeNCe/pull/443),
+  [`3ee43ee`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3ee43ee817260839c2f7755c94776e0e6503146e))
+
+- Remove GUI ([#458](https://github.com/sequence-toolbox/SeQUeNCe/pull/458),
+  [`4281660`](https://github.com/sequence-toolbox/SeQUeNCe/commit/42816600b8e3aeb7dfb580ee21c0e0b880627fea))
+
+
 ## [1.0.0] - 2026-6-12
 ### Added
 - Added support for the Stabilizer formalism by introducing `StabilizerState` and `QuantumManagerStabilizer`
@@ -551,4 +589,3 @@ New Component Modules from this paper: https://arxiv.org/pdf/2411.11377.
 ### Removed
 - push/pop functions for entities and non-stack protocols
 - some unnecessary entity attributes
-

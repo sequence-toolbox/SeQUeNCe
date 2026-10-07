@@ -6,8 +6,10 @@ Also included is the definition of the message type used by the reservation prot
 """
 from __future__ import annotations
 
+from typing import Mapping, Any
 
-class Reservation:
+
+class Reservation(Mapping[str, Any]):
     """Tracking of reservation parameters for the network manager.
        Each request will generate a reservation
 
@@ -21,6 +23,18 @@ class Reservation:
         entanglement_number (int): the number of entanglement pair that the request ask for.
         identity (int): the ID of a request.
     """
+
+    _EVENT_FIELDS = {
+        "identity": "identity",
+        "initiator": "initiator",
+        "responder": "responder",
+        "start_time": "start_time",
+        "end_time": "end_time",
+        "memory_size": "memory_size",
+        "entanglement_number": "entanglement_number",
+        "target_fidelity": "fidelity",
+        "path": "path",
+    }
 
     def __init__(self, initiator: str, responder: str, start_time: int,
                  end_time: int, memory_size: int, fidelity: float, entanglement_number: int = 1, identity: int = 0):
@@ -38,7 +52,7 @@ class Reservation:
             path (list[str]): a list of router names from the source to destination
             purification_mode (str): the mode of purification, 'until_target' or 'once'
         """
-
+        self.identity = identity
         self.initiator = initiator
         self.responder = responder
         self.start_time = start_time
@@ -46,11 +60,24 @@ class Reservation:
         self.memory_size = memory_size
         self.fidelity = fidelity
         self.entanglement_number = entanglement_number
-        self.identity = identity
-        self.path = []
+        self.path: list[str] = []
         self.purification_mode: str = 'until_target'
         assert self.start_time < self.end_time
         assert self.memory_size > 0
+
+    def __getitem__(self, key: str, /) -> Any:
+        try:
+            value = getattr(self, self._EVENT_FIELDS[key])
+        except KeyError:
+            raise KeyError(key) from None
+
+        return list(value) if key == "path" else value
+
+    def __iter__(self):
+        return iter(self._EVENT_FIELDS)
+
+    def __len__(self):
+        return len(self._EVENT_FIELDS)
 
     def __str__(self) -> str:
         return (f'|identity={self.identity}; initiator={self.initiator}; responder={self.responder}; path={self.path}; '

@@ -1,13 +1,13 @@
-from sequence.topology.router_net_topo import RouterNetTopo
+import sequence as sq
 
 
-def set_parameters(topology: RouterNetTopo):
+def set_parameters(topology: sq.RouterNetTopo):
     # set memory parameters
     MEMO_FREQ = 2e3
     MEMO_EXPIRE = 0
     MEMO_EFFICIENCY = 1
     MEMO_FIDELITY = 0.9349367588934053
-    for node in topology.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    for node in topology.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
         memory_array = node.get_components_by_type("MemoryArray")[0]
         memory_array.update_memory_params("frequency", MEMO_FREQ)
         memory_array.update_memory_params("coherence_time", MEMO_EXPIRE)
@@ -18,7 +18,7 @@ def set_parameters(topology: RouterNetTopo):
     DETECTOR_EFFICIENCY = 0.9
     DETECTOR_COUNT_RATE = 5e7
     DETECTOR_RESOLUTION = 100
-    for node in topology.get_nodes_by_type(RouterNetTopo.BSM_NODE):
+    for node in topology.get_nodes_by_type(sq.RouterNetTopo.BSM_NODE):
         bsm = node.get_components_by_type("SingleAtomBSM")[0]
         bsm.update_detectors_params("efficiency", DETECTOR_EFFICIENCY)
         bsm.update_detectors_params("count_rate", DETECTOR_COUNT_RATE)
@@ -42,7 +42,7 @@ def set_parameters(topology: RouterNetTopo):
 if __name__ == "__main__":
     network_config = "star_network.json"
 
-    network_topo = RouterNetTopo(network_config)
+    network_topo = sq.RouterNetTopo(network_config)
     tl = network_topo.get_timeline()
 
     set_parameters(network_topo)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     end_node_name = "end2"
     node1 = node2 = None
 
-    for router in network_topo.get_nodes_by_type(RouterNetTopo.QUANTUM_ROUTER):
+    for router in network_topo.get_nodes_by_type(sq.RouterNetTopo.QUANTUM_ROUTER):
         if router.name == start_node_name:
             node1 = router
         elif router.name == end_node_name:

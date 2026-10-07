@@ -1,4 +1,5 @@
-__all__ = ['memory_manager', 'resource_manager', 'rule_manager']
+"""Resource-management classes."""
 
-def __dir__():
-    return sorted(__all__)
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

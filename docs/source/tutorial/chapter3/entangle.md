@@ -43,9 +43,7 @@ We also define our `SimpleManager`, which will create entanglement protocol inst
 The code for the `EntangleGenNode` and `SimpleManager` classes is shown below:
 
 ```python
-from sequence.topology.node import Node
-from sequence.components.memory import Memory
-from sequence.entanglement_management.generation import EntanglementGenerationA
+import sequence as sq
 
 
 class SimpleManager:
@@ -63,16 +61,16 @@ class SimpleManager:
             self.ent_counter += 1
 
     def create_protocol(self, middle: str, other: str):
-        self.owner.protocols = [EntanglementGenerationA.create(self.owner, '%s.eg' % self.owner.name, middle, other,
+        self.owner.protocols = [sq.EntanglementGenerationA.create(self.owner, f'{self.owner.name}.eg', middle, other,
                                                                self.owner.components[self.memo_name])]
 
 
-class EntangleGenNode(Node):
-    def __init__(self, name: str, tl: Timeline):
+class EntangleGenNode(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
 
         memo_name = '%s.memo' % name
-        memory = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memory = sq.Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
         memory.owner = self
         memory.add_receiver(self)
         self.add_component(memory)
@@ -83,7 +81,7 @@ class EntangleGenNode(Node):
         memory = self.get_components_by_type("Memory")[0]
         memory.reset()
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: "sq.Message") -> None:
         self.protocols[0].received_message(src, msg)
 
     def get(self, photon, **kwargs):
@@ -126,16 +124,14 @@ As introduced in the previous chapter, we create nodes and channels to define th
 To avoid unnecessary errors, we will set the efficiency of our detectors to 1. 
 
 ```python
-from sequence.kernel.timeline import Timeline
-from sequence.topology.node import BSMNode
-from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
+import sequence as sq
 
 
-tl = Timeline()
+tl = sq.Timeline()
 
 node1 = EntangleGenNode('node1', tl)
 node2 = EntangleGenNode('node2', tl)
-bsm_node = BSMNode('bsm_node', tl, ['node1', 'node2'])
+bsm_node = sq.BSMNode('bsm_node', tl, ['node1', 'node2'])
 node1.set_seed(0)
 node2.set_seed(1)
 bsm_node.set_seed(2)
@@ -143,8 +139,8 @@ bsm_node.set_seed(2)
 bsm = bsm_node.get_components_by_type("SingleAtomBSM")[0]
 bsm.update_detectors_params('efficiency', 1)
 
-qc1 = QuantumChannel('qc1', tl, attenuation=0, distance=1000)
-qc2 = QuantumChannel('qc2', tl, attenuation=0, distance=1000)
+qc1 = sq.QuantumChannel('qc1', tl, attenuation=0, distance=1000)
+qc2 = sq.QuantumChannel('qc2', tl, attenuation=0, distance=1000)
 qc1.set_ends(node1, bsm_node.name)
 qc2.set_ends(node2, bsm_node.name)
 
@@ -153,7 +149,7 @@ nodes = [node1, node2, bsm_node]
 for i in range(3):
     for j in range(3):
         if i != j:
-            cc= ClassicalChannel('cc_%s_%s'%(nodes[i].name, nodes[j].name), tl, 1000, 1e8)
+            cc = sq.ClassicalChannel(f'cc_{nodes[i].name}_{nodes[j].name}', tl, 1000, 1e8)
             cc.set_ends(nodes[i], nodes[j].name)
 ```
 
@@ -167,10 +163,10 @@ The protocols in `EntangleGenNode.protocols` are paired with the `set_others` me
 Now, the protocols are ready to start generating entanglement and we can start our experiment. 
 
 ```python
-from sequence.entanglement_management.entanglement_protocol import EntanglementProtocol
+import sequence as sq
 
 
-def pair_protocol(node1: Node, node2: Node):
+def pair_protocol(node1: sq.Node, node2: sq.Node):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]
     node1_memo_name = node1.get_components_by_type("Memory")[0].name
@@ -253,7 +249,7 @@ We will also rewrite the code for the manager class to reflect our usage of two 
 
 
 ```python
-from sequence.entanglement_management.purification import BBPSSWProtocol
+import sequence as sq
 
 
 class SimpleManager:
@@ -274,48 +270,48 @@ class SimpleManager:
     def create_protocol(self):
         kept_memo = self.owner.components[self.kept_memo_name]
         meas_memo = self.owner.components[self.meas_memo_name]
-        self.owner.protocols = [BBPSSWProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
+        self.owner.protocols = [sq.PurificationProtocol.create(self.owner, 'purification_protocol', kept_memo, meas_memo)]
 
 
-class PurifyNode(Node):
-    def __init__(self, name: str, tl: Timeline):
+class PurifyNode(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         kept_memo_name = '%s.kept_memo' % name
         meas_memo_name = '%s.meas_memo' % name
-        kept_memo = Memory('%s.kept_memo' % name, tl, 0.9, 2000, 1, -1, 500)
-        meas_memo = Memory('%s.meas_memo' % name, tl, 0.9, 2000, 1, -1, 500)
+        kept_memo = sq.Memory(f'{name}.kept_memo', tl, 0.9, 2000, 1, -1, 500)
+        meas_memo = sq.Memory(f'{name}.meas_memo', tl, 0.9, 2000, 1, -1, 500)
         self.add_component(kept_memo)
         self.add_component(meas_memo)
 
         self.resource_manager = SimpleManager(self, kept_memo_name, meas_memo_name)
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: "sq.Message") -> None:
         self.protocols[0].received_message(src, msg)
 ```
 
-The `create` function of `BBPSSWProtocol` requires four arguments:
+The `create` function of `PurificationProtocol` requires four arguments:
 
 1. The node that holds the protocol instance
 2. The identity of the protocol instance
 3. The memory used as the `kept_memo`
 4. the memory used as the `meas_memo`
 
-By default, `BBPSSWProtocol` will create a `BBPSSWCircuit` instance.
+By default, `PurificationProtocol` will create a `BBPSSWCircuit` instance.
 
 ### Step 2: Create Network
 
 We can now use the code below to create the simulated network. 
 
 ```python
-tl = Timeline()
+tl = sq.Timeline()
 
 node1 = PurifyNode('node1', tl)
 node2 = PurifyNode('node2', tl)
 node1.set_seed(0)
 node2.set_seed(1)
 
-cc0 = ClassicalChannel('cc0', tl, 1000, 1e9)
-cc1 = ClassicalChannel('cc1', tl, 1000, 1e9)
+cc0 = sq.ClassicalChannel('cc0', tl, 1000, 1e9)
+cc1 = sq.ClassicalChannel('cc1', tl, 1000, 1e9)
 cc0.set_ends(node1, node2.name)
 cc1.set_ends(node2, node1.name)
 ```
@@ -328,7 +324,7 @@ Then, we assign the identity of the node and memory to which we are entangled in
 Finally, we set the fidelity of entanglement.
 
 ```python
-def entangle_memory(memo1: Memory, memo2: Memory, fidelity: float):
+def entangle_memory(memo1: sq.Memory, memo2: sq.Memory, fidelity: float):
     memo1.reset()
     memo2.reset()
 
@@ -354,7 +350,7 @@ entangle_memory(meas_memo_1, meas_memo_2, 0.9)
 Similar to the previous example, we create, pair, and start the protocols.
 
 ```python
-def pair_protocol(node1: Node, node2: Node):
+def pair_protocol(node1: sq.Node, node2: sq.Node):
     p1 = node1.protocols[0]
     p2 = node2.protocols[0]
     kept_memo_1_name = node1.resource_manager.kept_memo_name
@@ -445,35 +441,35 @@ The `left_memo` is the memory entangled with the memory on the left `SwapNodeB`.
 The `right_memo` is the memory entangled with the memory on the right `SwapNodeB`.
 
 ```python
-class SwapNodeA(Node):
-    def __init__(self, name: str, tl: Timeline):
+class SwapNodeA(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         left_memo_name = '%s.left_memo' % name
         right_memo_name = '%s.right_memo' % name
-        left_memo = Memory(left_memo_name, tl, 0.9, 2000, 1, -1, 500)
-        right_memo = Memory(right_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        left_memo = sq.Memory(left_memo_name, tl, 0.9, 2000, 1, -1, 500)
+        right_memo = sq.Memory(right_memo_name, tl, 0.9, 2000, 1, -1, 500)
         self.add_component(left_memo)
         self.add_component(right_memo)
 
         self.resource_manager = SimpleManager(self, [left_memo_name, right_memo_name])
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: "sq.Message") -> None:
         self.protocols[0].received_message(src, msg)
 ```
 
 The code for `SwapNodeB` is identical to `SwapNodeA` but with only one memory:
 
 ```python
-class SwapNodeB(Node):
-    def __init__(self, name: str, tl: Timeline):
+class SwapNodeB(sq.Node):
+    def __init__(self, name: str, tl: sq.Timeline):
         super().__init__(name, tl)
         memo_name = '%s.memo' % name
-        memo = Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
+        memo = sq.Memory(memo_name, tl, 0.9, 2000, 1, -1, 500)
         self.add_component(memo)
 
         self.resource_manager = SimpleManager(self, [memo_name])
 
-    def receive_message(self, src: str, msg: "Message") -> None:
+    def receive_message(self, src: str, msg: "sq.Message") -> None:
         self.protocols[0].received_message(src, msg)
 ```
 
@@ -499,7 +495,7 @@ We will set up the manager so that it automatically creates the right type of sw
 **Note**: the fidelity of entanglement after swapping is `f1 * f2 * fd`, where `f1`, `f2` denote the fidelity of the two entangled pairs and `fd` denotes the degradation rate.
 
 ```python
-from sequence.entanglement_management.swapping import EntanglementSwappingA, EntanglementSwappingB
+import sequence as sq
 
 class SimpleManager:
     def __init__(self, owner, memo_names):
@@ -519,11 +515,11 @@ class SimpleManager:
         if type(self.owner) is SwapNodeA:
             left_memo = self.owner.components[self.memo_names[0]]
             right_memo = self.owner.components[self.memo_names[1]]
-            self.owner.protocols = [EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo, 
+            self.owner.protocols = [sq.EntanglementSwappingA.create(self.owner, 'ESA', left_memo, right_memo,
                                                                  success_prob=1, degradation=0.99)]
         else:
             memo = self.owner.components[self.memo_names[0]]
-            self.owner.protocols = [EntanglementSwappingB.create(self.owner, '%s.ESB' % self.owner.name, memo)]
+            self.owner.protocols = [sq.EntanglementSwappingB.create(self.owner, f'{self.owner.name}.ESB', memo)]
 ```
 
 ### Step 2: Create Network
@@ -531,7 +527,7 @@ class SimpleManager:
 We create the three nodes and connect them with classical channels. 
 
 ```python
-tl = Timeline()
+tl = sq.Timeline()
 
 left_node = SwapNodeB('left', tl)
 right_node = SwapNodeB('right', tl)
@@ -544,7 +540,7 @@ nodes = [left_node, right_node, mid_node]
 
 for i in range(3):
     for j in range(3):
-        cc = ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
+        cc = sq.ClassicalChannel('cc_%s_%s' % (nodes[i].name, nodes[j].name), tl, 1000, 1e9)
         cc.set_ends(nodes[i], nodes[j].name)
 ```
 

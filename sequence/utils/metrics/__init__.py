@@ -15,13 +15,19 @@ if TYPE_CHECKING:
 
 from . import builtins
 from .builtins import (
-    DELIVERY_TIME_METRIC,
+    ADMISSION_RATE_METRIC,
+    BELL_PAIR_UTILIZATION_METRIC,
     EG_METRIC,
     EP_METRIC,
     ES_METRIC,
+    JAINS_FAIRNESS_INDEX_METRIC,
+    MEMORY_DECOHERENCE_RATE_METRIC,
+    MEMORY_UTILIZATION_RATIO_METRIC,
     PURIFIED_FIDELITIES_METRIC,
+    RESERVATION_SUCCESS_RATE_METRIC,
     SWAPPED_FIDELITIES_METRIC,
     THROUGHPUT_METRIC,
+    TIME_TO_SERVE_METRIC,
 )
 from .event_types import (
     EventType,
@@ -30,12 +36,15 @@ from .event_types import (
     register_event_type,
 )
 from .metric_types import (
-    CollectContext,
+    BellPairUtilizationMetric,
     CounterMetric,
-    DeliveryTimeMetric,
     EventAttributeMetric,
+    JainFairnessIndexMetric,
+    MemoryUtilizationRatioMetric,
     Metric,
+    ReservationSuccessRateMetric,
     ThroughputMetric,
+    TimeToServeMetric,
 )
 from .registry import (
     clear_registry,
@@ -147,30 +156,19 @@ def record(event_type: EventType, owner_name: str, **kwargs: Any) -> None:
     storage.append(record)
 
 
-def collect_trial_metrics(
-    owner_name: str,
-    *,
-    delivery_owner: str | None = None,
-    target_pairs: int | None = None,
-) -> dict[str, Any]:
+def collect_trial_metrics(owner_name: str) -> dict[str, Any]:
     """Collect per-trial metrics for a node from the metrics module.
 
     Args:
         owner_name: Node name to collect metrics for.
-        delivery_owner: Node name used for delivery-time metrics; defaults to `owner_name`.
-        target_pairs: Number of delivered pairs required to compute delivery time.
 
     Returns:
         Mapping of metric output keys to per-trial values.
     """
-    ctx = CollectContext(
-        delivery_owner=delivery_owner or owner_name,
-        target_pairs=target_pairs,
-    )
     result: dict[str, Any] = {}
     for metric in list_metrics():
         if metric in _enabled_metrics:
-            result.update(metric.collect(owner_name, storage, ctx))
+            result.update(metric.collect(owner_name, storage))
     return result
 
 
@@ -227,25 +225,34 @@ builtins.register_builtin_metrics()
 # Exported symbols
 __all__ = [
     # From builtins
-    "DELIVERY_TIME_METRIC",
+    "ADMISSION_RATE_METRIC",
+    "BELL_PAIR_UTILIZATION_METRIC",
     "EG_METRIC",
     "EP_METRIC",
     "ES_METRIC",
+    "JAINS_FAIRNESS_INDEX_METRIC",
+    "MEMORY_DECOHERENCE_RATE_METRIC",
+    "MEMORY_UTILIZATION_RATIO_METRIC",
     "PURIFIED_FIDELITIES_METRIC",
+    "RESERVATION_SUCCESS_RATE_METRIC",
     "SWAPPED_FIDELITIES_METRIC",
     "THROUGHPUT_METRIC",
+    "TIME_TO_SERVE_METRIC",
     # From event_types
     "EventType",
     "EventTypes",
     "list_event_types",
     "register_event_type",
     # From metric_types
-    "CollectContext",
+    "BellPairUtilizationMetric",
     "CounterMetric",
-    "DeliveryTimeMetric",
     "EventAttributeMetric",
+    "JainFairnessIndexMetric",
+    "MemoryUtilizationRatioMetric",
     "Metric",
+    "ReservationSuccessRateMetric",
     "ThroughputMetric",
+    "TimeToServeMetric",
     # From registry
     "clear_registry",
     "get_counter",

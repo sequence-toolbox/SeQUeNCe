@@ -169,6 +169,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
     def memory_expire(self, memory: "Memory") -> None:
         assert memory == self.memory, "Memory to expire does not match the protocol's memory"
+        self.record_memory_expired(memory)
         self.update_resource_manager(memory, MemoryInfo.RAW)
         for event in self.scheduled_events:
             if event.time >= self.owner.timeline.now():
@@ -181,12 +182,8 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     def _entanglement_fail(self):
         for event in self.scheduled_events:
             self.owner.timeline.remove_event(event)
-        metrics.record(
-            EventTypes.EG_FAILURE,
-            self.owner.name,
-            remote_node=self.remote_node_name,
-            fidelity=self.fidelity,
-        )
+        metrics.record(EventTypes.EG_FAILURE, self.owner.name, 
+                       remote_node=self.remote_node_name, fidelity=self.fidelity)
         log.logger.info(f'{self.owner.name} failed entanglement of memory {self.memory}')
 
         self.update_resource_manager(self.memory, MemoryInfo.RAW)

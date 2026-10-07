@@ -1,32 +1,30 @@
-from sequence.kernel.timeline import Timeline
-from sequence.kernel.event import Event
-from sequence.kernel.process import Process
+import sequence as sq
 
 class Store(object):
-    def __init__(self, tl: Timeline):
+    def __init__(self, tl: sq.Timeline):
         self.opening = False
         self.timeline = tl
 
     def open(self) -> None:
         self.opening = True
-        process = Process(self, 'close', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'close', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
     def close(self) -> None:
         self.opening = False
-        process = Process(self, 'open', [])
-        event = Event(self.timeline.now() + 12, process)
+        process = sq.Process(self, 'open', [])
+        event = sq.Event(self.timeline.now() + 12, process)
         self.timeline.schedule(event)
 
 
-tl = Timeline(60)
+tl = sq.Timeline(60)
 tl.show_progress = False
 store = Store(tl)
 print(tl.now())
 
-process = Process(store, 'open', [])
-event = Event(7, process)
+process = sq.Process(store, 'open', [])
+event = sq.Event(7, process)
 tl.schedule(event)
 
 tl.run()

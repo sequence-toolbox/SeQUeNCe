@@ -13,8 +13,7 @@
 
 [![PyPi](https://img.shields.io/pypi/v/sequence)](https://pypi.org/project/sequence/)
 ![pyversions](https://img.shields.io/pypi/pyversions/sequence)
-[![CI Pipeline](https://github.com/sequence-toolbox/SeQUeNCe/actions/workflows/ci.yml/badge.svg)](https://github.com/sequence-toolbox/SeQUeNCe/actions/workflows/ci.yml)
-[![Documentation](https://readthedocs.org/projects/sequence-rtd-tutorial/badge/?version=stable)](https://sequence-rtd-tutorial.readthedocs.io/)
+[![Documentation](https://img.shields.io/readthedocs/sequence-rtd-tutorial)](https://sequence-rtd-tutorial.readthedocs.io/)
 [![QuTiP](https://img.shields.io/badge/integration-QuTiP-blue)](https://qutip.org/)
 [![Stim](https://img.shields.io/badge/integration-Stim-blue)](https://github.com/quantumlib/Stim)
 [![Paper](https://img.shields.io/badge/10.1088%2F2058-9565%2Fac22f6?label=DOI)](https://iopscience.iop.org/article/10.1088/2058-9565/ac22f6)
@@ -53,7 +52,7 @@ Editable installations let Python use your local source tree directly, so change
 #### (1) Using pip
 ```
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-cd sequence
+cd SeQUeNCe
 make install_editable
 ```
 
@@ -80,7 +79,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 Here we clone the repository and let uv configure the development environment with the target python version.
 ```bash
 git clone https://github.com/sequence-toolbox/SeQUeNCe.git
-cd sequence
+cd SeQUeNCe
 uv sync
 ```
 
@@ -114,14 +113,6 @@ doi = {10.1088/2058-9565/ac22f6},
 url = {https://dx.doi.org/10.1088/2058-9565/ac22f6},
 publisher = {IOP Publishing},
 }
-```
-
-<!-- * X. Wu, A. Kolar, J. Chung, D. Jin, T. Zhong, R. Kettimuthu and M. Suchara. "SeQUeNCe: Simulator of QUantum Network Communication." GitHub repository, https://github.com/sequence-toolbox/SeQUeNCe, 2021. -->
-
-## Running the GUI
-Once SeQUeNCe has been installed as described above, run the `gui.py` script found in the root of the project directory
-```
-python gui.py
 ```
 
 ## Usage Examples

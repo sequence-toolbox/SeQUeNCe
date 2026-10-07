@@ -312,3 +312,6 @@ class QuantumManagerDensityFock(QuantumManager):
             output_state += kraus_op @ prepared_state @ kraus_op.conj().T
 
         self.set(all_keys, output_state)
+
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        raise NotImplementedError("discard() is not implemented for QuantumManagerDensityFock")

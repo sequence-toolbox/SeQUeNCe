@@ -333,7 +333,10 @@ class Memory(Entity):
     def reset(self) -> None:
         """Method to clear quantum memory.
 
-        Will reset quantum state to |0> and will clear entanglement information.
+        Discard the state from any joint state first, otherwise the remote memories sharing it keep a
+        stale reference to this key and a later operation on them resurrects the discarded qubit.
+        
+        Then reset quantum state to |0> and will clear entanglement information.
 
         Side Effects:
             Will modify internal parameters and quantum state.
@@ -343,6 +346,7 @@ class Memory(Entity):
         self.generation_time = -1
         self.last_update_time = -1
 
+        self.timeline.quantum_manager.discard(self.qstate_key, self.get_generator().random())
         self.timeline.quantum_manager.set([self.qstate_key], [complex(1), complex(0)])
         self.entangled_memory = {'node_id': None, 'memo_id': None}
         if self.expiration_event is not None:
@@ -360,6 +364,7 @@ class Memory(Entity):
             May schedule expiration event.
         """
 
+        self.timeline.quantum_manager.discard(self.qstate_key, self.get_generator().random())
         self.timeline.quantum_manager.set([self.qstate_key], state)
         self.previous_bsm = -1
         self.entangled_memory = {'node_id': None, 'memo_id': None}

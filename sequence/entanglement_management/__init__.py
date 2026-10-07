@@ -1,4 +1,5 @@
-__all__ = ['entanglement_protocol', 'generation', 'swapping', 'purification', 'teleportation']
+"""Entanglement generation, purification, swapping, and teleportation."""
 
-def __dir__():
-    return sorted(__all__)
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)
