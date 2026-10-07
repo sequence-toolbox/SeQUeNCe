@@ -8,7 +8,7 @@ import stim
 
 from sequence.kernel.quantum_state import StabilizerState, KetState
 from sequence.kernel.quantum_manager import (QuantumManagerDensity, QuantumManagerDensityFock, 
-                                             QuantumManagerKet, QuantumManagerStabilizer)
+                                             QuantumManagerKet, QuantumManagerStabilizer, QuantumManagerBellDiagonal)
 from sequence.kernel.quantum_manager.utils import swap_qubits, validate_circuit_run
 from sequence.kernel.quantum_utils import (measure_state_with_cache_ket, measure_entangled_state_with_cache_ket, 
                                            measure_multiple_with_cache_ket)
@@ -1043,6 +1043,30 @@ def test_qmanager_density_discard():
     assert qm.get(key2).keys == [key2]
     # tracing out half of a Bell pair leaves the maximally mixed state
     assert np.allclose(qm.get(key2).state, np.eye(2) / 2)
+
+
+def test_qmanager_belldiagonal_discard():
+    qm = QuantumManagerBellDiagonal()
+    key1 = qm.new()
+    key2 = qm.new()
+    diag_elems = [0.7, 0.1, 0.1, 0.1]
+    qm.set([key1, key2], diag_elems)
+    state = qm.get(key1)
+    assert state is qm.get(key2)
+
+    qm.discard(key1)
+
+    assert key1 not in qm.states
+    assert qm.get(key2) is state
+    assert np.allclose(qm.get(key2).state, diag_elems)
+
+    # Discarding an absent key is a no-op, including keys not yet entangled.
+    qm.discard(key1)
+    qm.discard(qm.new())
+    assert set(qm.states) == {key2}
+
+    qm.discard(key2)
+    assert qm.states == {}
 
 
 def test_qmanager_stabilizer_discard():
