@@ -131,16 +131,16 @@ class QuantumManagerKet(QuantumManager):
         for key in keys:
             self.states[key] = new_state
 
-    def separate(self, key: int, meas_samp: float = None) -> None:
-        """Detach a key from its joint state by collapsing it in the computational basis.
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        """Discard a key from its joint state by collapsing it in the computational basis.
 
         A ket vector cannot represent the mixed state left on the other qubits by simply
         discarding one of them, so the discarded qubit is measured. The remaining keys
         receive the normalized post-measurement branch and no longer reference `key`.
 
         Args:
-            key (int): key to detach from its joint state.
-            meas_samp (float): random sample in [0, 1) selecting the collapse outcome.
+            key (int): key to discard from its joint state.
+            meas_samp (float | None): random sample in [0, 1) selecting the collapse outcome.
         """
         state = self.states.get(key)
         if state is None or len(state.keys) <= 1:

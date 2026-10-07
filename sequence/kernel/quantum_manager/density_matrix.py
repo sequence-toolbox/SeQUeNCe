@@ -132,18 +132,18 @@ class QuantumManagerDensity(QuantumManager):
         """
         self.set([key], [[complex(0), complex(0)], [complex(0), complex(1)]])
 
-    def separate(self, key: int, meas_samp: float = None) -> None:
-        """Detach a key from its joint state by tracing it out.
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        """Discard a key from its joint state by tracing it out.
 
         A density matrix represents the reduced state of the remaining qubits exactly,
         so no collapse is needed here.
 
         Note:
-            `meas_samp` is intentionally unused. Kept for interface compatibility.
+            `meas_samp` is intentionally unused in the density matrix formalism. Kept for interface compatibility.
 
         Args:
             key (int): key to detach from its joint state.
-            meas_samp (float): unused.
+            meas_samp (float | None): unused.
         """
         state = self.states.get(key)
         if state is None or len(state.keys) <= 1:

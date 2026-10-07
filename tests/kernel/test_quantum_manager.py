@@ -1009,14 +1009,14 @@ def test_apply_idling_decoherence():
         assert instruction.gate_args_copy() == pytest.approx([expected_px, expected_py, expected_pz])
 
 
-def test_qmanager_ket_separate():
+def test_qmanager_ket_discard():
     """Discarding one qubit of a joint state must not leave the partner referencing it."""
     qm = QuantumManagerKet()
     key1 = qm.new()
     key2 = qm.new()
     qm.set([key1, key2], [complex(sqrt(1 / 2)), 0, 0, complex(sqrt(1 / 2))])
 
-    qm.separate(key1, 0.3)
+    qm.discard(key1, 0.3)
     qm.set([key1], [complex(1), complex(0)])
 
     assert qm.get(key1).keys == [key1]
@@ -1030,13 +1030,13 @@ def test_qmanager_ket_separate():
     assert np.allclose(qm.get(key1).state, [1, 0])
 
 
-def test_qmanager_density_separate():
+def test_qmanager_density_discard():
     qm = QuantumManagerDensity()
     key1 = qm.new()
     key2 = qm.new()
     qm.set([key1, key2], [complex(sqrt(1 / 2)), 0, 0, complex(sqrt(1 / 2))])
 
-    qm.separate(key1)
+    qm.discard(key1)
     qm.set([key1], [complex(1), complex(0)])
 
     assert qm.get(key1).keys == [key1]
@@ -1045,7 +1045,7 @@ def test_qmanager_density_separate():
     assert np.allclose(qm.get(key2).state, np.eye(2) / 2)
 
 
-def test_qmanager_stabilizer_separate():
+def test_qmanager_stabilizer_discard():
     qm = QuantumManagerStabilizer(base_seed=0)
     key1 = qm.new()
     key2 = qm.new()
@@ -1055,14 +1055,14 @@ def test_qmanager_stabilizer_separate():
     qm.run_circuit(circuit, [key1, key2])
     assert set(qm.get(key1).keys) == {key1, key2}
 
-    qm.separate(key1)
+    qm.discard(key1)
     qm.set_to_zero(key1)
 
     assert qm.get(key1).keys == [key1]
     assert qm.get(key2).keys == [key2]
 
 
-def test_memory_reset_separates_from_entangled_partner():
+def test_memory_reset_discards_from_entangled_partner():
     """MemoryInfo.to_raw -> Memory.reset must detach the memory from its remote partner."""
     from sequence.components.memory import Memory
 

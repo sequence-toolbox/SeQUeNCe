@@ -380,16 +380,16 @@ class QuantumManagerStabilizer(QuantumManager):
         for key in state_obj.keys:
             self.last_idle_time_ps_by_key[key] = now_ps
     
-    def separate(self, key: int, meas_samp: float = None) -> None:
-        """Detach a key from its shared tableau block by measuring it.
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        """Discard a key from its shared tableau block by measuring it.
 
         Note:
             `meas_samp` is intentionally unused; this manager draws its own randomness.
             Kept for interface compatibility.
 
         Args:
-            key (int): key to detach from its joint state.
-            meas_samp (float): unused.
+            key (int): key to discard from its joint state.
+            meas_samp (float | None): unused.
         """
         state = self.states.get(key)
         if state is None or len(state.keys) <= 1:

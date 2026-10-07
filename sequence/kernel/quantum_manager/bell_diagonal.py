@@ -64,3 +64,19 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def set_to_noiseless(self, keys: list[int]):
         self.set(keys, [float(1), float(0), float(0), float(0)])
+
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        """Discard a quantum state from the manager.
+
+        Note:
+            `meas_samp` is intentionally unused in the Bell diagonal formalism. Kept for interface compatibility.
+
+        Args:
+            key (int): key to discard from the quantum manager.
+            meas_samp (float | None): unused.
+        """
+        state = self.states.get(key)
+        if state is None:
+            return
+        if key in state.keys:
+            self.states.pop(key)
