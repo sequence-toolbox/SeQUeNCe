@@ -8,12 +8,13 @@ import stim
 
 from sequence.kernel.quantum_state import StabilizerState, KetState
 from sequence.kernel.quantum_manager import (QuantumManagerDensity, QuantumManagerDensityFock, 
-                                             QuantumManagerKet, QuantumManagerStabilizer)
+                                             QuantumManagerKet, QuantumManagerStabilizer, QuantumManagerBellDiagonal)
 from sequence.kernel.quantum_manager.utils import swap_qubits, validate_circuit_run
 from sequence.kernel.quantum_utils import (measure_state_with_cache_ket, measure_entangled_state_with_cache_ket, 
                                            measure_multiple_with_cache_ket)
 from sequence.components.circuit import Circuit
 from sequence.constants import SECOND
+from sequence.kernel.timeline import Timeline
 
 
 class DumbCircuit():
@@ -1006,3 +1007,96 @@ def test_apply_idling_decoherence():
         assert instruction.name == "PAULI_CHANNEL_1"
         assert [int(target.value) for target in instruction.targets_copy()] == [local_target]
         assert instruction.gate_args_copy() == pytest.approx([expected_px, expected_py, expected_pz])
+
+
+def test_qmanager_ket_discard():
+    """Discarding one qubit of a joint state must not leave the partner referencing it."""
+    qm = QuantumManagerKet()
+    key1 = qm.new()
+    key2 = qm.new()
+    qm.set([key1, key2], [complex(sqrt(1 / 2)), 0, 0, complex(sqrt(1 / 2))])
+
+    qm.discard(key1, 0.3)
+    qm.set([key1], [complex(1), complex(0)])
+
+    assert qm.get(key1).keys == [key1]
+    assert qm.get(key2).keys == [key2]
+
+    # an operation on the partner must not resurrect the discarded qubit
+    circuit = Circuit(1)
+    circuit.x(0)
+    qm.run_circuit(circuit, [key2])
+    assert qm.get(key2).keys == [key2]
+    assert np.allclose(qm.get(key1).state, [1, 0])
+
+
+def test_qmanager_density_discard():
+    qm = QuantumManagerDensity()
+    key1 = qm.new()
+    key2 = qm.new()
+    qm.set([key1, key2], [complex(sqrt(1 / 2)), 0, 0, complex(sqrt(1 / 2))])
+
+    qm.discard(key1)
+    qm.set([key1], [complex(1), complex(0)])
+
+    assert qm.get(key1).keys == [key1]
+    assert qm.get(key2).keys == [key2]
+    # tracing out half of a Bell pair leaves the maximally mixed state
+    assert np.allclose(qm.get(key2).state, np.eye(2) / 2)
+
+
+def test_qmanager_belldiagonal_discard():
+    qm = QuantumManagerBellDiagonal()
+    key1 = qm.new()
+    key2 = qm.new()
+    diag_elems = [0.7, 0.1, 0.1, 0.1]
+    qm.set([key1, key2], diag_elems)
+    state = qm.get(key1)
+    assert state is qm.get(key2)
+
+    qm.discard(key1)
+
+    assert key1 not in qm.states
+    assert qm.get(key2) is state
+    assert np.allclose(qm.get(key2).state, diag_elems)
+
+    # Discarding an absent key is a no-op, including keys not yet entangled.
+    qm.discard(key1)
+    qm.discard(qm.new())
+    assert set(qm.states) == {key2}
+
+    qm.discard(key2)
+    assert qm.states == {}
+
+
+def test_qmanager_stabilizer_discard():
+    qm = QuantumManagerStabilizer(base_seed=0)
+    key1 = qm.new()
+    key2 = qm.new()
+    circuit = stim.Circuit()
+    circuit.append("H", [0])
+    circuit.append("CX", [0, 1])
+    qm.run_circuit(circuit, [key1, key2])
+    assert set(qm.get(key1).keys) == {key1, key2}
+
+    qm.discard(key1)
+    qm.set_to_zero(key1)
+
+    assert qm.get(key1).keys == [key1]
+    assert qm.get(key2).keys == [key2]
+
+
+def test_memory_reset_discards_from_entangled_partner():
+    """MemoryInfo.to_raw -> Memory.reset must detach the memory from its remote partner."""
+    from sequence.components.memory import Memory
+
+    tl = Timeline()
+    memo1 = Memory("memo1", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    memo2 = Memory("memo2", tl, fidelity=1, frequency=0, efficiency=1, coherence_time=-1, wavelength=500)
+    tl.quantum_manager.set([memo1.qstate_key, memo2.qstate_key],
+                           [complex(sqrt(1 / 2)), 0, 0, complex(sqrt(1 / 2))])
+
+    memo1.reset()
+
+    assert tl.quantum_manager.get(memo2.qstate_key).keys == [memo2.qstate_key]
+    assert tl.quantum_manager.get(memo1.qstate_key).keys == [memo1.qstate_key]

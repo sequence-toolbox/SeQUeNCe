@@ -125,7 +125,23 @@ class QuantumManager(ABC):
             keys (list[int]): key(s) of state(s) to change.
             state (Any): State payload to assign, type determined by type of subclass.
         """
+        pass
 
+    @abstractmethod
+    def discard(self, key: int, meas_samp: float | None = None) -> None:
+        """Discard a key from any joint quantum state while updating the remaining subsystem according to the 
+        quantum formalism. Discarding a subsystem of the quantum state.
+
+        `set` only rebinds the keys it is given. When a key that belongs to a multi-qubit
+        state is rebound on its own, the remaining keys keep a stale reference to it and a
+        later operation on any of them will silently pull the discarded key back in.
+        Formalisms that group keys into a shared state object must override this method to
+        remove `key` from its group before the caller rebinds it.
+
+        Args:
+            key (int): key to discard from its joint state.
+            meas_samp (float | None): random sample in [0, 1) used if discarding requires a collapse.
+        """
         pass
 
     def remove(self, key: int) -> None:
