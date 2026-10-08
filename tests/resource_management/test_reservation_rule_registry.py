@@ -80,13 +80,7 @@ def test_generator_uses_replacement_builder():
     generator = ReservationRuleGenerator()
     generator.registry.replace(EG_REQUEST, _custom_rule_builder)
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node1", "node2"],
-        Reservation(),
-        [0],
-        0,
-    )
+    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
     assert all(isinstance(rule, Rule) for rule in rules)
     assert any(rule.action_args == {"custom": 0} for rule in rules)
@@ -96,13 +90,7 @@ def test_generator_uses_replacement_builder():
 def test_generator_applies_default_priority_offsets():
     generator = ReservationRuleGenerator()
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node1", "node2"],
-        Reservation(),
-        [0],
-        0,
-    )
+    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
     # At an endpoint, the applicable default slots are EG_REQUEST,
     # EP_AWAIT, and ES_B_END. Preserve SeQUeNCe's legacy ordering:
@@ -113,14 +101,7 @@ def test_generator_applies_default_priority_offsets():
 def test_generator_uses_custom_base_priority_with_default_offsets():
     generator = ReservationRuleGenerator()
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node1", "node2"],
-        Reservation(),
-        [0],
-        0,
-        priority=27,
-    )
+    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0, priority=27)
 
     # ``priority`` is the EG/base priority; EP and ES remain offset by
     # +10 and +20 respectively.
@@ -130,13 +111,7 @@ def test_generator_uses_custom_base_priority_with_default_offsets():
 def test_generator_applies_priority_offsets_to_all_default_rule_builders():
     generator = ReservationRuleGenerator()
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node0", "node1", "node2"],
-        Reservation(),
-        [0, 1],
-        1,
-    )
+    rules = generator.create_rules(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
 
     # At a middle node, the applicable slots are:
     # EG_AWAIT, EG_REQUEST, EP_REQUEST, EP_AWAIT, ES_A, ES_B.
@@ -147,13 +122,7 @@ def test_generator_uses_registry_to_disable_rule():
     generator = ReservationRuleGenerator()
     registry = generator.registry
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node1", "node2"],
-        Reservation(),
-        [0],
-        0,
-    )
+    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
     assert all(isinstance(rule, Rule) for rule in rules)
     assert any(rule.action is eg_rule_action_request for rule in rules)
@@ -161,13 +130,7 @@ def test_generator_uses_registry_to_disable_rule():
 
     registry.disable(EP_AWAIT)
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node1", "node2"],
-        Reservation(),
-        [0],
-        0,
-    )
+    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
     assert any(rule.action is eg_rule_action_request for rule in rules)
     assert not any(rule.action is ep_rule_action_await for rule in rules)
@@ -185,13 +148,7 @@ def test_generator_uses_static_default_rule_spec_order():
     for rule_name in (EG_AWAIT, EG_REQUEST, EP_REQUEST, EP_AWAIT, ES_B_END, ES_A, ES_B):
         generator.registry.replace(rule_name, marker_builder(rule_name))
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node0", "node1", "node2"],
-        Reservation(),
-        [0, 1],
-        1,
-    )
+    rules = generator.create_rules(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
 
     context = ReservationRuleContext(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1, 10)
     expected_names = [spec.name for spec in DEFAULT_RESERVATION_RULE_SPECS if spec.predicate(context)]
@@ -203,13 +160,7 @@ def test_generator_uses_static_default_rule_spec_order():
 def test_default_es_a_rule_preserves_swapping_action_args():
     generator = ReservationRuleGenerator()
 
-    rules = generator.create_rules(
-        Owner(),
-        ["node0", "node1", "node2"],
-        Reservation(),
-        [0, 1],
-        1,
-    )
+    rules = generator.create_rules(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
 
     es_a_rules = [rule for rule in rules if rule.action is es_rule_action_A]
     assert len(es_a_rules) == 1

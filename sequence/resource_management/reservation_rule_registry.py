@@ -302,15 +302,8 @@ class ReservationRuleGenerator:
     def __init__(self) -> None:
         self.registry = ReservationRuleRegistry()
 
-    def create_rules(
-        self,
-        owner: "QuantumRouter",
-        path: list[str],
-        reservation: "Reservation",
-        memory_indices: list[int],
-        index: int,
-        priority: int = 10,
-    ) -> list[Rule]:
+    def create_rules(self, owner: "QuantumRouter", path: list[str], reservation: "Reservation", 
+                     memory_indices: list[int], index: int, priority: int = 10) -> list[Rule]:
         """Create reservation rules in SeQUeNCe's static rule-slot order.
 
         Args:

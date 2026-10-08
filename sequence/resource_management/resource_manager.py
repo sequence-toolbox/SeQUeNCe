@@ -185,22 +185,14 @@ class ResourceManager:
         """
         return self.rule_generator.registry
 
-    def generate_load_rules(
-        self,
-        path: list[str],
-        reservation: Reservation,
-        timecards: list[MemoryTimeCard],
-        memory_array_name: str,
-        rule_priority: int = 10,
-    ) -> None:
+    def generate_load_rules(self, path: list[str], reservation: Reservation, timecards: list[MemoryTimeCard], 
+                            rule_priority: int = 10) -> None:
         """Generate and load rules for a given reservation.
 
         Args:
             path: Path from the reservation's initiator to responder.
             reservation: The reservation used to generate the rules.
             timecards: Time cards involved in the reservation at this node.
-            memory_array_name: Name of memory array component to use for rule
-                conditions and actions at this node.
             rule_priority: Priority assigned to the generated rules.
 
         Returns:
@@ -213,14 +205,7 @@ class ResourceManager:
         log.logger.debug(f'Memory indices for reservation {reservation.identity} on node {self.owner.name}: {memory_indices}')
 
         index: int = path.index(self.owner.name)
-        rules = self.rule_generator.create_rules(
-            self.owner,
-            path,
-            reservation,
-            memory_indices,
-            index,
-            priority=rule_priority,
-        )
+        rules = self.rule_generator.create_rules(self.owner, path, reservation, memory_indices, index, rule_priority)
         for rule in rules:
             rule.set_reservation(reservation)
 
