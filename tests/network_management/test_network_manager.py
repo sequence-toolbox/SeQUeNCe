@@ -98,7 +98,8 @@ class TestNetworkManager:
         mock_reservation.path = ['n1', 'n2']
 
         test_node.network_manager.generate_rules(mock_reservation)
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, test_node.network_manager.timecards, test_node.network_manager.memory_array_name)
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, 
+                                                                               test_node.network_manager.timecards)
 
 # Test the default network manager
 class TestDistributedNetworkManager:
@@ -123,7 +124,8 @@ class TestDistributedNetworkManager:
 
         test_node.network_manager.pop(msg=inbound_msg) # Call the func with mocks
 
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, test_node.network_manager.timecards, test_node.network_manager.memory_array_name)
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, 
+                                                                               test_node.network_manager.timecards)
 
         test_node.get_reservation_result.assert_called_once_with(mock_reservation, True)
         test_node.get_other_reservation.assert_not_called()
@@ -158,8 +160,7 @@ class TestDistributedNetworkManager:
         inbound_msg.reservation = mock_reservation
         test_node.network_manager.pop(msg=inbound_msg)
         test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation,
-                                                                               test_node.network_manager.timecards,
-                                                                               test_node.network_manager.memory_array_name)
+                                                                               test_node.network_manager.timecards)
 
         test_node.get_reservation_result.assert_not_called()
         test_node.get_other_reservation.assert_not_called()

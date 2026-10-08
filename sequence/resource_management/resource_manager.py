@@ -193,7 +193,7 @@ class ResourceManager:
             path: Path from the reservation's initiator to responder.
             reservation: The reservation used to generate the rules.
             timecards: Time cards involved in the reservation at this node.
-            rule_priority: Priority assigned to the generated rules.
+            rule_priority: Priority assigned to the generated rules. The lower the value, the higher the priority.
 
         Returns:
             None.

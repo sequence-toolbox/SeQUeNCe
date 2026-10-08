@@ -130,7 +130,7 @@ class NetworkManager(ABC):
         Args:
             reservation (Reservation): reservation for which to generate rules.
         """
-        self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards, self.memory_array_name)
+        self.owner.resource_manager.generate_load_rules(reservation.path, reservation, self.timecards)
 
     def remove_reservation_from_timecards(self, reservation: Reservation):
         """Remove a reservation from all timecards. 
