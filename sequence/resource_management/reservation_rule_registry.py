@@ -1,9 +1,7 @@
 """Utilities for building reservation-generated resource-management rules.
 
-This module defines the fixed reservation rule slots used by the default
-reservation rule generator.  Users may replace or disable the builders for
-these existing slots, but the reservation rule order and creation predicates
-remain static.
+This module defines the fixed reservation rule slots used by the default reservation rule generator. Users may replace
+or disable the builders for these existing slots, but the reservation rule order and creation predicates remain static.
 """
 
 from __future__ import annotations
@@ -36,30 +34,35 @@ if TYPE_CHECKING:
 
 EG_AWAIT: Final[str] = "eg_await"
 EG_REQUEST: Final[str] = "eg_request"
-EP_REQUEST: Final[str] = "ep_request"
 EP_AWAIT: Final[str] = "ep_await"
-ES_B_END: Final[str] = "es_b_end"
+EP_REQUEST: Final[str] = "ep_request"
 ES_A: Final[str] = "es_a"
 ES_B: Final[str] = "es_b"
+ES_B_END: Final[str] = "es_b_end"
 
 EG_PRIORITY_OFFSET: Final[int] = 0
 EP_PRIORITY_OFFSET: Final[int] = 10
 ES_PRIORITY_OFFSET: Final[int] = 20
 
 RESERVATION_RULE_NAMES: Final[tuple[str, ...]] = (
-    EG_AWAIT,
-    EG_REQUEST,
-    EP_REQUEST,
-    EP_AWAIT,
-    ES_B_END,
-    ES_A,
-    ES_B,
+    EG_AWAIT, EG_REQUEST,
+    EP_AWAIT, EP_REQUEST,
+    ES_A, ES_B, ES_B_END
 )
 
 
 @dataclass(frozen=True)
 class ReservationRuleContext:
-    """Inputs needed to build reservation-generated resource-management rules."""
+    """Inputs needed to build reservation-generated resource-management rules.
+
+    Attributes:
+        owner: The quantum router that the reservation applies to.
+        path: The path of node names that the reservation traverses (initiator -> responder)
+        reservation: The reservation object.
+        memory_indices: The list of memory indices at the owner nodes involved in the reservation.
+        index: The current node index in the path for which the rule is being built.
+        priority: The priority for the rule (default is 10).
+    """
 
     owner: QuantumRouter
     path: list[str]
@@ -75,7 +78,14 @@ ReservationRuleBuilder = Callable[[ReservationRuleContext], Rule]
 
 @dataclass(frozen=True)
 class ReservationRuleSpec:
-    """Static specification for one built-in reservation rule slot."""
+    """Static specification for one built-in reservation rule slot.
+    
+    Attributes:
+        name: The name of the reservation rule.
+        predicate: A function accepting a ReservationRuleContext and returning True if this rule should be created,
+            or False otherwise.
+        builder: A function that builds the rule given a context.
+    """
 
     name: str
     predicate: ReservationRulePredicate
@@ -83,40 +93,47 @@ class ReservationRuleSpec:
 
 
 def _applies_eg_await(context: ReservationRuleContext) -> bool:
+    """Return True if the node is not the path initiator and should await entanglement generation."""
     return context.index > 0
 
 
 def _applies_eg_request(context: ReservationRuleContext) -> bool:
+    """Return True if the node is not the path responder and should request entanglement generation."""
     return context.index < len(context.path) - 1
 
 
 def _applies_ep_request(context: ReservationRuleContext) -> bool:
+    """Return True if the node is not the path initiator and should request entanglement purification."""
     return context.index > 0
 
 
 def _applies_ep_await(context: ReservationRuleContext) -> bool:
+    """Return True if the node is not the path responder and should await entanglement purification."""
     return context.index < len(context.path) - 1
 
 
 def _applies_es_b_end(context: ReservationRuleContext) -> bool:
+    """Return True if the node is a path endpoint and should use the endpoint entanglement-swapping rule."""
     return context.index == 0 or context.index == len(context.path) - 1
 
 
 def _applies_es_middle(context: ReservationRuleContext) -> bool:
+    """Return True if the node is between the path endpoints and should use the middle-node swapping rules."""
     return 0 < context.index < len(context.path) - 1
 
 
 def _build_eg_await_rule(context: ReservationRuleContext) -> Rule:
+    """Build the rule for awaiting entanglement generation with the previous node in the path."""
     condition_args = {"memory_indices": context.memory_indices[:context.reservation.memory_size]}
     action_args = {
         "mid": context.owner.map_to_middle_node[context.path[context.index - 1]],
-        "path": context.path,
-        "index": context.index,
+        "path": context.path, "index": context.index,
     }
     return Rule(context.priority + EG_PRIORITY_OFFSET, eg_rule_action_await, eg_rule_condition, action_args, condition_args)
 
 
 def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
+    """Build the rule for requesting entanglement generation with the next node in the path."""
     if context.index == 0:
         condition_args = {"memory_indices": context.memory_indices[:context.reservation.memory_size]}
     else:
@@ -124,8 +141,7 @@ def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
 
     action_args = {
         "mid": context.owner.map_to_middle_node[context.path[context.index + 1]],
-        "path": context.path,
-        "index": context.index,
+        "path": context.path, "index": context.index,
         "name": context.owner.name,
         "reservation": context.reservation,
     }
@@ -133,6 +149,7 @@ def _build_eg_request_rule(context: ReservationRuleContext) -> Rule:
 
 
 def _build_ep_request_rule(context: ReservationRuleContext) -> Rule:
+    """Build the rule for requesting entanglement purification using the reservation's purification mode."""
     condition_args = {
         "memory_indices": context.memory_indices[:context.reservation.memory_size],
         "reservation": context.reservation,
@@ -142,6 +159,7 @@ def _build_ep_request_rule(context: ReservationRuleContext) -> Rule:
 
 
 def _build_ep_await_rule(context: ReservationRuleContext) -> Rule:
+    """Build the rule for awaiting entanglement purification using the reservation's fidelity and purification mode."""
     if context.index == 0:
         condition_args = {
             "memory_indices": context.memory_indices,
@@ -158,29 +176,13 @@ def _build_ep_await_rule(context: ReservationRuleContext) -> Rule:
     return Rule(context.priority + EP_PRIORITY_OFFSET, ep_rule_action_await, ep_rule_condition_await, {}, condition_args)
 
 
-def _build_es_b_end_rule(context: ReservationRuleContext) -> Rule:
-    if context.index == 0:
-        target_remote = context.path[-1]
-    else:
-        target_remote = context.path[0]
-
-    condition_args = {
-        "memory_indices": context.memory_indices,
-        "target_remote": target_remote,
-        "fidelity": context.reservation.fidelity,
-    }
-    return Rule(context.priority + ES_PRIORITY_OFFSET, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
-
-
 def _get_swapping_neighbors(owner_name: str, path: list[str]) -> tuple[str, str]:
     """Return the neighbors used by middle-node swapping rules.
 
-    SeQUeNCe creates swapping rules by repeatedly reducing the path to the
-    nodes that remain after each swapping layer. If the current node is at an
-    even index in the reduced path, that layer is skipped and the path is
-    reduced again. Once the current node is at an odd index, its immediate
-    reduced-path neighbors are the left and right entanglement-swapping
-    partners.
+    SeQUeNCe creates swapping rules by repeatedly reducing the path to the nodes that remain after each swapping layer.
+    If the current node is at an even index in the reduced path, that layer is skipped and the path is reduced again.
+    Once the current node is at an odd index, its immediate reduced-path neighbors are the left and right
+    entanglement-swapping partners.
     """
     reduced_path = path[:]
     while reduced_path.index(owner_name) % 2 == 0:
@@ -195,11 +197,11 @@ def _get_swapping_neighbors(owner_name: str, path: list[str]) -> tuple[str, str]
 
 
 def _build_es_a_rule(context: ReservationRuleContext) -> Rule:
+    """Build the swapping A rule using the node's swapping partners, success probability, and fidelity degradation."""
     left, right = _get_swapping_neighbors(context.owner.name, context.path)
     condition_args = {
         "memory_indices": context.memory_indices,
-        "left": left,
-        "right": right,
+        "left": left, "right": right,
         "fidelity": context.reservation.fidelity,
     }
     action_args = {
@@ -210,24 +212,39 @@ def _build_es_a_rule(context: ReservationRuleContext) -> Rule:
 
 
 def _build_es_b_rule(context: ReservationRuleContext) -> Rule:
+    """Build the swapping B rule for an intermediate node using its swapping partners and the required fidelity."""
     left, right = _get_swapping_neighbors(context.owner.name, context.path)
     condition_args = {
         "memory_indices": context.memory_indices,
-        "left": left,
-        "right": right,
+        "left": left, "right": right,
         "fidelity": context.reservation.fidelity,
     }
     return Rule(context.priority + ES_PRIORITY_OFFSET, es_rule_action_B, es_rule_condition_B, {}, condition_args)
 
 
+def _build_es_b_end_rule(context: ReservationRuleContext) -> Rule:
+    """Build the endpoint swapping B rule targeting the opposite endpoint of the reservation path."""
+    if context.index == 0:
+        target_remote = context.path[-1]
+    else:
+        target_remote = context.path[0]
+
+    condition_args = {
+        "memory_indices": context.memory_indices,
+        "target_remote": target_remote,
+        "fidelity": context.reservation.fidelity,
+    }
+    return Rule(context.priority + ES_PRIORITY_OFFSET, es_rule_action_B, es_rule_condition_B_end, {}, condition_args)
+
+
 DEFAULT_RESERVATION_RULE_SPECS: Final[tuple[ReservationRuleSpec, ...]] = (
     ReservationRuleSpec(EG_AWAIT, _applies_eg_await, _build_eg_await_rule),
     ReservationRuleSpec(EG_REQUEST, _applies_eg_request, _build_eg_request_rule),
-    ReservationRuleSpec(EP_REQUEST, _applies_ep_request, _build_ep_request_rule),
     ReservationRuleSpec(EP_AWAIT, _applies_ep_await, _build_ep_await_rule),
-    ReservationRuleSpec(ES_B_END, _applies_es_b_end, _build_es_b_end_rule),
+    ReservationRuleSpec(EP_REQUEST, _applies_ep_request, _build_ep_request_rule),
     ReservationRuleSpec(ES_A, _applies_es_middle, _build_es_a_rule),
     ReservationRuleSpec(ES_B, _applies_es_middle, _build_es_b_rule),
+    ReservationRuleSpec(ES_B_END, _applies_es_b_end, _build_es_b_end_rule),
 )
 
 
@@ -312,9 +329,8 @@ class ReservationRuleGenerator:
             reservation: Reservation used to generate the rules.
             memory_indices: Local memory indices assigned to the reservation.
             index: Position of ``owner`` in ``path``.
-            priority: Base priority for generated reservation rules. The default
-                EG, EP, and ES builders use ``priority``, ``priority + 10``,
-                and ``priority + 20``, respectively.
+            priority: Base priority for generated reservation rules. The default EG, EP, and ES builders use
+                ``priority``, ``priority + 10``, and ``priority + 20``, respectively.
 
         Returns:
             Reservation-generated rules whose static predicates apply at this node.
