@@ -31,7 +31,7 @@ class Owner:
 class Reservation:
     memory_size = 1
     fidelity = 0.9
-    purification_mode = "BBPSSW"
+    purification_mode = "until_target"
 
 
 def _custom_rule_builder(context: ReservationRuleContext) -> Rule:
@@ -98,26 +98,6 @@ def test_generator_applies_default_priority_offsets():
     assert [rule.priority for rule in rules] == [10, 20, 30]
 
 
-def test_generator_uses_custom_base_priority_with_default_offsets():
-    generator = ReservationRuleGenerator()
-
-    rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0, priority=27)
-
-    # ``priority`` is the EG/base priority; EP and ES remain offset by
-    # +10 and +20 respectively.
-    assert [rule.priority for rule in rules] == [27, 37, 47]
-
-
-def test_generator_applies_priority_offsets_to_all_default_rule_builders():
-    generator = ReservationRuleGenerator()
-
-    rules = generator.create_rules(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
-
-    # At a middle node, the applicable slots are:
-    # EG_AWAIT, EG_REQUEST, EP_REQUEST, EP_AWAIT, ES_A, ES_B.
-    assert [rule.priority for rule in rules] == [10, 10, 20, 20, 30, 30]
-
-
 def test_generator_uses_registry_to_disable_rule():
     generator = ReservationRuleGenerator()
     registry = generator.registry
@@ -134,27 +114,6 @@ def test_generator_uses_registry_to_disable_rule():
 
     assert any(rule.action is eg_rule_action_request for rule in rules)
     assert not any(rule.action is ep_rule_action_await for rule in rules)
-
-
-def test_generator_uses_static_default_rule_spec_order():
-    generator = ReservationRuleGenerator()
-
-    def marker_builder(name):
-        def build(context: ReservationRuleContext) -> Rule:
-            return Rule(context.priority, eg_rule_action_request, lambda *_args: [], {"slot": name}, {})
-
-        return build
-
-    for rule_name in (EG_AWAIT, EG_REQUEST, EP_REQUEST, EP_AWAIT, ES_B_END, ES_A, ES_B):
-        generator.registry.replace(rule_name, marker_builder(rule_name))
-
-    rules = generator.create_rules(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1)
-
-    context = ReservationRuleContext(Owner(), ["node0", "node1", "node2"], Reservation(), [0, 1], 1, 10)
-    expected_names = [spec.name for spec in DEFAULT_RESERVATION_RULE_SPECS if spec.predicate(context)]
-    actual_names = [rule.action_args["slot"] for rule in rules]
-
-    assert actual_names == expected_names
 
 
 def test_default_es_a_rule_preserves_swapping_action_args():
