@@ -340,14 +340,9 @@ class ResourceManager:
                 entangled_count += 1
             elif info.state == MemoryInfo.PURIFIED:
                 purified_count += 1
-        metrics.record(
-            EventTypes.MEMORY_UPDATE,
-            self.owner.name,
-            occupied_count=occupied_count,
-            entangled_count=entangled_count,
-            purified_count=purified_count,
-            total_memories=len(self.memory_manager),
-        )
+        metrics.record(EventTypes.MEMORY_UPDATE, self.owner.name, occupied_count=occupied_count, 
+                       entangled_count=entangled_count, purified_count=purified_count, 
+                       total_memories=len(self.memory_manager))
 
     def get_memory_manager(self) -> MemoryManager:
         assert self.memory_manager is not None

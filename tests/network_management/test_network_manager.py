@@ -62,17 +62,9 @@ def test_node(tl):
     return node
 
 @pytest.fixture
-def mock_reservation(test_node):
-    reservation = Mock(spec=Reservation)
-    reservation.initiator = 'n1'
-    reservation.responder = 'n2'
+def reservation():
+    reservation = Reservation('n1', 'n2', 1e12, 3e12, 50, 1)
     reservation.path = ['n1', 'n2']
-    reservation.start_time = 1e12
-    reservation.end_time = 3e12
-    reservation.memory_size = 50
-    reservation.fidelity = 1
-    reservation.entanglement_number = 1
-    reservation.identity = 0
     return reservation
 
 
@@ -94,11 +86,11 @@ class TestNetworkManager:
         assert all(isinstance(card, MemoryTimeCard) for card in tc)
 
     @pytest.mark.unit
-    def test_network_manager_generate_rule(self, test_node, mock_reservation):
-        mock_reservation.path = ['n1', 'n2']
+    def test_network_manager_generate_rule(self, test_node, reservation):
+        reservation.path = ['n1', 'n2']
 
-        test_node.network_manager.generate_rules(mock_reservation)
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, 
+        test_node.network_manager.generate_rules(reservation)
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(reservation.path, reservation, 
                                                                                test_node.network_manager.timecards)
 
 # Test the default network manager
@@ -116,56 +108,56 @@ class TestDistributedNetworkManager:
         assert test_node.network_manager.routing_protocol is not None
 
     @pytest.mark.unit
-    def test_pop_approve_initiator(self, test_node, mock_reservation):
-        mock_reservation.initiator = test_node.name
+    def test_pop_approve_initiator(self, test_node, reservation):
+        reservation.initiator = test_node.name
         inbound_msg = Mock()
         inbound_msg.msg_type = RSVPMsgType.APPROVE
-        inbound_msg.reservation = mock_reservation
+        inbound_msg.reservation = reservation
 
-        test_node.network_manager.pop(msg=inbound_msg) # Call the func with mocks
+        test_node.network_manager.pop(msg=inbound_msg)
 
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation, 
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(reservation.path, reservation, 
                                                                                test_node.network_manager.timecards)
 
-        test_node.get_reservation_result.assert_called_once_with(mock_reservation, True)
+        test_node.get_reservation_result.assert_called_once_with(reservation, True)
         test_node.get_other_reservation.assert_not_called()
 
     @pytest.mark.unit
-    def test_pop_approve_responder(self, test_node, mock_reservation):
-        mock_reservation.responder = test_node.name
+    def test_pop_approve_responder(self, test_node, reservation):
+        reservation.responder = test_node.name
         inbound_msg = Mock()
         inbound_msg.msg_type = RSVPMsgType.APPROVE
-        inbound_msg.reservation = mock_reservation
+        inbound_msg.reservation = reservation
 
         test_node.network_manager.pop(msg=inbound_msg)
-        test_node.get_other_reservation.assert_called_once_with(mock_reservation)
+        test_node.get_other_reservation.assert_called_once_with(reservation)
         test_node.get_reservation_result.assert_not_called()
 
 
     @pytest.mark.unit
-    def test_pop_reject(self, test_node, mock_reservation):
-        mock_reservation.initiator = test_node.name
+    def test_pop_reject(self, test_node, reservation):
+        reservation.initiator = test_node.name
         inbound_msg = Mock()
         inbound_msg.msg_type = RSVPMsgType.REJECT
-        inbound_msg.reservation = mock_reservation
+        inbound_msg.reservation = reservation
 
         test_node.network_manager.pop(msg=inbound_msg)
 
-        test_node.get_reservation_result.assert_called_once_with(mock_reservation, False)
+        test_node.get_reservation_result.assert_called_once_with(reservation, False)
 
     @pytest.mark.unit
-    def test_pop_approve_intermediate(self, test_node, mock_reservation):
+    def test_pop_approve_intermediate(self, test_node, reservation):
         inbound_msg = Mock()
         inbound_msg.msg_type = RSVPMsgType.APPROVE
-        inbound_msg.reservation = mock_reservation
+        inbound_msg.reservation = reservation
         test_node.network_manager.pop(msg=inbound_msg)
-        test_node.resource_manager.generate_load_rules.assert_called_once_with(mock_reservation.path, mock_reservation,
+        test_node.resource_manager.generate_load_rules.assert_called_once_with(reservation.path, reservation,
                                                                                test_node.network_manager.timecards)
 
         test_node.get_reservation_result.assert_not_called()
         test_node.get_other_reservation.assert_not_called()
 
-    def test_NetworkManager_push(self, test_node, mock_reservation):
+    def test_NetworkManager_push(self, test_node, reservation):
         outbound_msg = Mock()
         test_node.send_out = False
         assert len(test_node.send_log) == 0

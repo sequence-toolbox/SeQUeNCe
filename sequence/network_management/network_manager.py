@@ -238,38 +238,14 @@ class DistributedNetworkManager(NetworkManager):
         """
         reservation: Reservation = msg.reservation
         if msg.msg_type == RSVPMsgType.APPROVE:
-            metrics.record(
-                EventTypes.RESERVATION_APPROVED,
-                self.owner.name,
-                identity=reservation.identity,
-                initiator=reservation.initiator,
-                responder=reservation.responder,
-                start_time=reservation.start_time,
-                end_time=reservation.end_time,
-                memory_size=reservation.memory_size,
-                entanglement_number=reservation.entanglement_number,
-                target_fidelity=reservation.fidelity,
-                path=list(reservation.path),
-            )
+            metrics.record(EventTypes.RESERVATION_APPROVED, self.owner.name, **reservation)
             self.generate_rules(reservation)
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, True) # Deliver the result to the Node
             elif reservation.responder == self.owner.name:
                 self.owner.get_other_reservation(reservation)
         elif msg.msg_type == RSVPMsgType.REJECT:
-            metrics.record(
-                EventTypes.RESERVATION_REJECTED,
-                self.owner.name,
-                identity=reservation.identity,
-                initiator=reservation.initiator,
-                responder=reservation.responder,
-                start_time=reservation.start_time,
-                end_time=reservation.end_time,
-                memory_size=reservation.memory_size,
-                entanglement_number=reservation.entanglement_number,
-                target_fidelity=reservation.fidelity,
-                path=[],
-            )
+            metrics.record(EventTypes.RESERVATION_REJECTED, self.owner.name, **{**reservation, "path": []})
             if reservation.initiator == self.owner.name:
                 self.owner.get_reservation_result(reservation, False)
 

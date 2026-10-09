@@ -138,21 +138,11 @@ class RequestApp(App):
             reservation = self.memo_to_reservation[info.index]
             valid_fidelity = info.fidelity >= reservation.fidelity
             if info.remote_node == reservation.initiator and valid_fidelity:
-                metrics.record(
-                    EventTypes.DELIVERY,
-                    self.node.name,
-                    fidelity=info.fidelity,
-                    **reservation,
-                )
+                metrics.record(EventTypes.DELIVERY, self.node.name, fidelity=info.fidelity, **reservation)
                 self.node.resource_manager.update(None, info.memory, "RAW")
             elif info.remote_node == reservation.responder and valid_fidelity:
                 self.memory_counter += 1
-                metrics.record(
-                    EventTypes.DELIVERY,
-                    self.node.name,
-                    fidelity=info.fidelity,
-                    **reservation,
-                )
+                metrics.record(EventTypes.DELIVERY, self.node.name, fidelity=info.fidelity, **reservation)
                 log.logger.info(f"Successfully generated entanglement. Counter is at {self.memory_counter}.")
                 self.node.resource_manager.update(None, info.memory, "RAW")
 
