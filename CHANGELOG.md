@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- version list -->
 
+## v1.3.0 (2026-10-10)
+
+### Bug Fixes
+
+- Fix request_app to handle purified pairs
+  ([#459](https://github.com/sequence-toolbox/SeQUeNCe/pull/459),
+  [`3133c66`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3133c66d80a898c6c3cc9af9eec3fa94fdbe2233))
+
+- Separate a memory's qstate key from its joint state on reset
+  ([#461](https://github.com/sequence-toolbox/SeQUeNCe/pull/461),
+  [`f84508c`](https://github.com/sequence-toolbox/SeQUeNCe/commit/f84508c83175198e60cf775f0c57bd77eab08985))
+
+### Features
+
+- Add registry for reservation rule classes
+  ([#357](https://github.com/sequence-toolbox/SeQUeNCe/pull/357),
+  [`3aac8c6`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3aac8c6dcdb18d6c13aca7cbc80668c8c2acd979))
+
+- Unified API using lazy loading ([#468](https://github.com/sequence-toolbox/SeQUeNCe/pull/468),
+  [`7c0d2c4`](https://github.com/sequence-toolbox/SeQUeNCe/commit/7c0d2c419ce450b033ed3315157394d70b88d5b8))
+
+
 ## v1.2.0 (2026-09-12)
 
 ### Continuous Integration
