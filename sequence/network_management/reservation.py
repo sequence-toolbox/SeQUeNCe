@@ -90,7 +90,8 @@ class Reservation(Mapping[str, Any]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Reservation):
             return False
-        return (other.initiator == self.initiator
+        return (other.identity == self.identity
+            and other.initiator == self.initiator
             and other.responder == self.responder
             and other.start_time == self.start_time
             and other.end_time == self.end_time
@@ -103,7 +104,7 @@ class Reservation(Mapping[str, Any]):
 
     def __hash__(self):
         return hash((self.initiator, self.responder, self.start_time, self.end_time, self.memory_size, 
-                     self.fidelity, self.entanglement_number))
+                     self.fidelity, self.entanglement_number, self.identity))
     
     def set_path(self, path: list[str]):
         self.path = path

@@ -108,6 +108,17 @@ class TestReservation:
         assert std_reservation == res1
 
     @pytest.mark.unit
+    def test_equality_distinct_identities(self):
+        res1 = Reservation('a', 'b', 10, 20, 5, 0.9, identity=1)
+        res2 = Reservation('a', 'b', 10, 20, 5, 0.9, identity=2)
+        res3 = Reservation('a', 'b', 10, 20, 5, 0.9, identity=1)
+
+        assert res1 != res2
+        assert res1 == res3
+        assert hash(res1) == hash(res3)
+        assert len({res1, res2}) == 2
+
+    @pytest.mark.unit
     def test_less_than(self, std_reservation):
         res1 = Reservation('a', 'b', 10, 20, 5, 0.9, identity=100)
         assert std_reservation < res1
