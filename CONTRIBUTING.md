@@ -96,5 +96,6 @@ By making a contribution to this project, I certify that:
 This repository and its contributors are governed by the [SeQUeNCe Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [Caitao Zhan (czhan@anl.gov)](mainto:czhan@anl.gov).
 
 ### Attributions
-Parts of this document are written in reference to 
-https://github.com/Code-dot-mil/code.mil/blob/master/CONTRIBUTING.md
+Parts of this document are written in reference to:
+1. https://github.com/Code-dot-mil/code.mil/blob/master/CONTRIBUTING.md
+2. https://github.com/ggml-org/llama.cpp/blob/master/CONTRIBUTING.md
