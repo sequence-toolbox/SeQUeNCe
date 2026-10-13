@@ -148,6 +148,7 @@ Here is the updated table with the Code column populated:
 | 2025 | V. S. Mai et al. | [Towards Optimal Orders for Entanglement Swapping in Path Graphs: A Greedy Approach](https://arxiv.org/abs/2504.14040) | IEEE QCE | |
 | 2024 | C. Howe et al. | [Towards Scalable Quantum Repeater Networks](https://arxiv.org/abs/2409.08416) | arXiv preprint | |
 | 2024 | X. Wu et al. | [Parallel Simulation of Quantum Networks with Distributed Quantum State Management](https://dl.acm.org/doi/abs/10.1145/3634701) | ACM TOMACS | |
+| 2024 | L. Vinci | [Quantum Key Distribution Performance: Extending the Sequence simulator to Estimate the Speed of free-space Optic Links](https://hdl.handle.net/20.500.14247/17332) | Master's Thesis, Ca’ Foscari University of Venice | [GitHub](https://github.com/lcky00/QKD_Simulator) |
 | 2023 | R. Zhou et al. | [A Simulator of Atom-Atom Entanglement with Atomic Ensembles and Quantum Optics](https://doi.org/10.1109/QCE57702.2023.00143) | IEEE QCE | |
 | 2023 | M.G. Davis et al. | [Towards Distributed Quantum Computing by Qubit and Gate Graph Partitioning Techniques](https://doi.org/10.1109/QCE57702.2023.00026) | IEEE QCE | |
 | 2022 | A. Zang et al. | [Simulation of Entanglement Generation between Absorptive Quantum Memories](https://doi.org/10.1109/QCE53715.2022.00084) | IEEE QCE | |
