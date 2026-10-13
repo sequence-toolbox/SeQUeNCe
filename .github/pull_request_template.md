@@ -17,4 +17,4 @@
 <!-- If applicable, add screenshots or screen recordings. Use N/A if no related attachments. -->
 
 ## AI/LLM Use Disclaimer
-<!-- If AI is used, provide exact model and reasoning level used to produce the source code. -->
+<!-- Disclose all AI-assisted or AI-generated code. Include the model/tool used and identify where and how it was used.>
