@@ -11,7 +11,7 @@
 - [ ] No new warnings introduced
 
 ## Related Issues
-<!-- Link related tickets or issues. Use "Closes #123" to auto-close. -->
+<!-- Link related tickets or issues. Use "Closes #123" to auto-close. Use N/A if no related issue.-->
 
 ## Screenshots
-<!-- If applicable, add screenshots or screen recordings. -->
+<!-- If applicable, add screenshots or screen recordings. Use N/A if no related attachments. -->
