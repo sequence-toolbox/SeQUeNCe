@@ -1,4 +1,4 @@
-                                                                    # Contributing to SeQUeNCe
+# Contributing to SeQUeNCe
 
 Thank you for taking the time to contribute. The following document contains a set of guidelines for contributing to SeQueNCe.
 
@@ -23,19 +23,18 @@ intentionally making the contribution available under the license associated wit
 
 > [!IMPORTANT]
 >
-> AI-generated code is allowed. You are 100% responsible for every line, however it was produced.
+> AI-assisted and AI-generated contributions are permitted, but all AI involvement must be fully discolsed. You are solely responsible for any code you submit.
 >
-> Undisclosed AI usage may result in your account being permanently banned from contributing to the project.
+> Undisclosed AI use may result in a permament contribution ban.
 
-If AI is used to generate any portion of the code, contributors must adhere to the following requirements:
+Use of GenAI tools when contributing is allowed, provided you meet the following requirements so maintainers can properly evaluate your contributions:
 
-1. Explicitly disclose the manner in which AI was employed.
-2. Check for an existing PR addressing the same change; if one exists, comment there to work with its author instead of opening a duplicate.
-3. Perform a comprehensive manual review prior to submitting the pull request. A proper code review usually takes something like one hour per 200-400 LOC and you should be spending **at least that much time on code review alone**.
-4. Be prepared to explain every line of code you submit when asked about it by a maintainer.
-5. It is strictly prohibited to use AI to write your posts for you (bug reports, feature requests, pull request descriptions, Github discussions, responding to humans, ...).
+1. Disclose all AI use in the contribution, including AI-assisted, AI-generated, and any other AI involvement.
+2. Before submitting AI-assisted or AI-generated code, you must verify it and understand its logic, implementation, and design. You must be prepared to explain these decisions in the pull request and in response to maintainer questions.
+3. Clearly document how and to what extent AI was used, including the name of each tool and model, such as ChatGPT, Codex, or Claude.
+4.  You may not use AI to draft, rewrite, or generate bug reports, feature requests, pull request descriptions, GitHub Discussions, review comments, or responses to maintainers.
 
-
+If you are unsure how these requirements apply to your contribution, open a GitHub Discussion or contact a maintainer for clarification.
 
 ### 3. Developer Certificate of Origin Process
 
