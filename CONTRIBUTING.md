@@ -46,7 +46,7 @@ If you are unsure how these requirements apply to your contribution, open a GitH
 
 ### 4. Developer Certificate of Origin Process
 
-Before submitting contributing code to this repository you'll need to sign a Developer Certificate of Origin (DCO) (see below). At a high level, adding your information to this file tells us that you have the right to submit the work you're contributing and indicates that you consent to our treating the contribution in a way consistent with the license associated with this software (as described in [LICENSE](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/LICENSE)) and its documentation ("Project").
+Before submitting contributing code to this repository you'll need to sign a Developer Certificate of Origin (DCO) (see below). At a high level, adding your information to this file tells us that you have the right to submit the work you're contributing and indicates that you consent to our treating the contribution in a way consistent with the license associated with this software (as described in [LICENSE](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/LICENSE)) and its documentation ("Project"). Remediation commits are permitted.
 
 To agree to the DCO, each commit must be signed off with a message like:
 ```Signed-off-by: John Doe <john.doe@university.edu>```. This can be done automatically using `git commit -s`.  Additionally, the author name as configured in git must match the signed-off name. A valid signed off commit will look like
