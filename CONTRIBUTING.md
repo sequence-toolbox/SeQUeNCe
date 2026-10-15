@@ -5,19 +5,29 @@ Thank you for taking the time to contribute. The following document contains a s
 #### Table of Contents
 - [Policy](#policy)
   - [1. Introduction](#1-introduction)
-  - [2. AI Usage](#2-ai-usage)
-  - [3. Developer Certificate of Origin Process](#3-developer-certificate-of-origin-process)
-  - [4. Important Points](#4-important-points)
+  - [2. Important Points](#4-important-points)
+  - [3. AI Usage](#2-ai-usage)
+  - [4. Developer Certificate of Origin Process](#3-developer-certificate-of-origin-process)
   - [5. DCO Text](#5-dco-text)
-- [Code of Conduct](#code-of-conduct)
 - [Attributions](#attributions)
-
 
 ## Policy
 ### 1. Introduction
-The project maintainer for this Project will only accept contributions using the Developer's Certificate of Origin 1.1  located at [developercertificate.org](https://developercertificate.org) ("DCO"). The DCO is a legally binding statement asserting that you are the  creator of your contribution, or that you otherwise have the authority to distribute the contribution, and that you are  intentionally making the contribution available under the license associated with the Project ("License").
+The project maintainer for this Project will only accept contributions using the Developer's Certificate of Origin 1.1  located at [developercertificate.org](https://developercertificate.org) ("DCO"). The DCO is a legally binding statement asserting that you are the creator of your contribution, or that you otherwise have the authority to distribute the contribution, and that you are intentionally making the contribution available under the license associated with the Project ("License"). Additionally, we require that contributions follow the AI guidelines.
 
-### 2. AI Usage
+### 2. Important Points
+* New contributors should not remove existing ANL copyright headers; however, you may add your own name and company to new files you create.
+
+* Pseudonymous or anonymous contributions are permissible, but you must be reachable at the email address provided in the Signed-off-by line.
+
+* If your contribution is significant, you are also welcome to add your name and copyright date to the source file header.
+
+* U.S. Federal law prevents the government from accepting gratuitous services unless certain conditions are met. By submitting a pull request, you acknowledge that your services are offered without expectation of payment and that you expressly waive any future pay claims against the U.S. Federal government related to your contribution.
+
+* If you are a U.S. Federal government employee and use a `*.mil` or `*.gov` email address, we interpret your Signed-off-by to mean that the contribution was created in whole or in part by you and that your contribution is not subject to copyright protections.
+
+
+### 3. AI Usage
 
 > [!IMPORTANT]
 >
@@ -34,20 +44,19 @@ Use of GenAI tools when contributing is allowed, provided you meet the following
 
 If you are unsure how these requirements apply to your contribution, open a GitHub Discussion or contact a maintainer for clarification.
 
-### 3. Developer Certificate of Origin Process
+### 4. Developer Certificate of Origin Process
 
-Before submitting contributing code to this repository for the first time, you'll need to sign a Developer Certificate of Origin (DCO) (see below). To agree to the DCO, add your name and email address to the [CONTRIBUTORS.md](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/CONTRIBUTORS.md) file. At a high level, adding your information to this file tells us that you have the right to submit the work you're contributing and indicates that you consent to our treating the contribution in a way consistent with the license associated with this software (as described in [LICENSE](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/LICENSE)) and its documentation ("Project").
+Before submitting contributing code to this repository you'll need to sign a Developer Certificate of Origin (DCO) (see below). At a high level, adding your information to this file tells us that you have the right to submit the work you're contributing and indicates that you consent to our treating the contribution in a way consistent with the license associated with this software (as described in [LICENSE](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/LICENSE)) and its documentation ("Project").
 
-### 4. Important Points
-* New contributors should not remove existing ANL copyright headers; however, you may add your own name and company to new files you create.
+To agree to the DCO, each commit must be signed off with a message like:
+```Signed-off-by: John Doe <john.doe@university.edu>```. This can be done automatically using `git commit -s`.  Additionally, the author name as configured in git must match the signed-off name. A valid signed off commit will look like
 
-* Pseudonymous or anonymous contributions are permissible, but you must be reachable at the email address provided in the Signed-off-by line.
-
-* If your contribution is significant, you are also welcome to add your name and copyright date to the source file header.
-
-* U.S. Federal law prevents the government from accepting gratuitous services unless certain conditions are met. By submitting a pull request, you acknowledge that your services are offered without expectation of payment and that you expressly waive any future pay claims against the U.S. Federal government related to your contribution.
-
-* If you are a U.S. Federal government employee and use a `*.mil` or `*.gov` email address, we interpret your Signed-off-by to mean that the contribution was created in whole or in part by you and that your contribution is not subject to copyright protections.
+```
+Author: John Doe <john.doe@university.edu>
+Date:   Sat Feb 29 00:00:00 2026 -0000
+    Update file
+    Signed-off-by: John Doe <john.doe@university.edu>
+```
 
 ### 5. DCO Text
 ```txt
@@ -89,8 +98,6 @@ By making a contribution to this project, I certify that:
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved. 
 ```
-## Code of Conduct
-This repository and its contributors are governed by the [SeQUeNCe Code of Conduct](https://github.com/sequence-toolbox/SeQUeNCe/blob/master/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [Caitao Zhan (czhan@anl.gov)](mainto:czhan@anl.gov).
 
 ## Attributions
 
