@@ -5,9 +5,9 @@ Thank you for taking the time to contribute. The following document contains a s
 #### Table of Contents
 - [Policy](#policy)
   - [1. Introduction](#1-introduction)
-  - [2. Important Points](#4-important-points)
-  - [3. AI Usage](#2-ai-usage)
-  - [4. Developer Certificate of Origin Process](#3-developer-certificate-of-origin-process)
+  - [2. Important Points](#2-important-points)
+  - [3. AI Usage](#3-ai-usage)
+  - [4. Developer Certificate of Origin Process](#4-developer-certificate-of-origin-process)
   - [5. DCO Text](#5-dco-text)
 - [Attributions](#attributions)
 
