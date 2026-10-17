@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- version list -->
 
+## v1.3.1 (2026-10-17)
+
+### Bug Fixes
+
+- Include identity in reservation equality.
+  ([#475](https://github.com/sequence-toolbox/SeQUeNCe/pull/475),
+  [`7fc9f2a`](https://github.com/sequence-toolbox/SeQUeNCe/commit/7fc9f2a149df6afb359faee437c152eb04a602df))
+
+### Documentation
+
+- Add thesis to README.md papers list
+  ([#478](https://github.com/sequence-toolbox/SeQUeNCe/pull/478),
+  [`949f46c`](https://github.com/sequence-toolbox/SeQUeNCe/commit/949f46c58ec11f5ceb5aff798f74ea6241fb412c))
+
+- Create contributing guide. ([#480](https://github.com/sequence-toolbox/SeQUeNCe/pull/480),
+  [`aa403ce`](https://github.com/sequence-toolbox/SeQUeNCe/commit/aa403ced7327af7173762f08df2ba2a7315d17bd))
+
+- Create PR review template. ([#479](https://github.com/sequence-toolbox/SeQUeNCe/pull/479),
+  [`3ed8285`](https://github.com/sequence-toolbox/SeQUeNCe/commit/3ed828586eb45d0d2dd51ce538c2b1d29bd384c1))
+
+
 ## v1.3.0 (2026-10-10)
 
 ### Bug Fixes
