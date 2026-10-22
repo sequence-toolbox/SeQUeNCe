@@ -11,11 +11,12 @@ maintainers = [
 license-files = ["LICENSE"]
 description = "Simulator of QUantum Network Communication (SeQUeNCe) is an open-source tool that allows modeling of quantum networks including photonic network components, control protocols, and applications."
 readme = "README.md"
-requires-python = ">=3.12, <3.15"
+requires-python = ">=3.12, <3.16"
 classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14"
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15"
 ]
 keywords = ["quantum", "network", "discrete", "event", "simulator"]
 dependencies = [
