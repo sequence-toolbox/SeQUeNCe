@@ -83,8 +83,9 @@ def _cascade_with_frames(frames: int):
     node = QKDNode("alice", tl)
     cascade = node.protocol_stack[1]
     cascade.k1 = 10
-    for frame in range(frames):
-        cascade.bits.append((frame * 0x9E3779B97F4A7C15) % (1 << cascade.frame_len))
+    rng = np.random.default_rng(0)
+    for _ in range(frames):
+        cascade.bits.append(int.from_bytes(rng.bytes(cascade.frame_len // 8), "little"))
         cascade.create_checksum_table()
     return cascade
 

@@ -463,8 +463,8 @@ class Cascade(StackProtocol):
         """Return the index/block mapping tables, building them on first use.
 
         The tables depend only on `k1`, `w` and `frame_len`, so every frame shares one read-only copy.
-        Each pass shuffles with its own `RandomState(pass_id)`, which gives the same permutation as
-        seeding the global numpy RNG without disturbing it.
+        Each pass shuffles with its own `default_rng(pass_id)`, so both endpoints derive the same
+        permutation without touching numpy's global RNG.
         """
 
         key = (self.k1, self.w, self.frame_len)
@@ -487,7 +487,7 @@ class Cascade(StackProtocol):
                     break
 
                 bit_order = list(range(self.frame_len))
-                random.RandomState(pass_id).shuffle(bit_order)
+                random.default_rng(pass_id).shuffle(bit_order)
                 for i in range(self.frame_len):
                     index_to_block_relation.append(int(bit_order[i] / block_size))
 
@@ -507,7 +507,7 @@ class Cascade(StackProtocol):
                     block_to_index_relation[int(i / block_size)][i % block_size] = i
             else:
                 bit_order = list(range(self.frame_len))
-                random.RandomState(pass_id).shuffle(bit_order)
+                random.default_rng(pass_id).shuffle(bit_order)
                 for i in range(self.frame_len):
                     bit_pos = bit_order[i]
                     block_to_index_relation[int(bit_pos / block_size)][bit_pos % block_size] = i
