@@ -1,3 +1,4 @@
+import numpy as np
 from sequence.components.optical_channel import QuantumChannel, ClassicalChannel
 from sequence.kernel.event import Event
 from sequence.kernel.process import Process
@@ -75,3 +76,36 @@ def test_cascade_run():
         assert k1 == k2
         assert k1 < 2 ** KEYSIZE  # check that key is not too large
     assert alice.protocol_stack[1].error_bit_rate == 0
+
+
+def _cascade_with_frames(frames: int):
+    tl = Timeline()
+    node = QKDNode("alice", tl)
+    cascade = node.protocol_stack[1]
+    cascade.k1 = 10
+    rng = np.random.default_rng(0)
+    for _ in range(frames):
+        cascade.bits.append(int.from_bytes(rng.bytes(cascade.frame_len // 8), "little"))
+        cascade.create_checksum_table()
+    return cascade
+
+
+def test_cascade_block_tables_shared_across_frames():
+    # issue #174: every frame used to rebuild and keep its own copy of identical tables
+    cascade = _cascade_with_frames(3)
+
+    for lists in (cascade.index_to_block_id_lists, cascade.block_id_to_index_lists):
+        assert len(lists) == 4
+        assert lists[1] is lists[2] is lists[3]
+    assert len(cascade.checksum_tables) == 4
+    assert cascade.checksum_tables[1] is not cascade.checksum_tables[2]
+
+
+def test_cascade_checksum_table_keeps_global_rng():
+    # building the shuffled tables must not reseed numpy's global RNG, which BB84 draws from
+    np.random.seed(123)
+    _cascade_with_frames(2)
+    after = np.random.rand()
+
+    np.random.seed(123)
+    assert after == np.random.rand()
