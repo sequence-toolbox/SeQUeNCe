@@ -26,6 +26,7 @@ The project maintainer for this Project will only accept contributions using the
 
 * If you are a U.S. Federal government employee and use a `*.mil` or `*.gov` email address, we interpret your Signed-off-by to mean that the contribution was created in whole or in part by you and that your contribution is not subject to copyright protections.
 
+* Members of the organization are exempt from the DCO signing enforcement.
 
 ### 3. AI Usage
 
