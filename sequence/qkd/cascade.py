@@ -180,6 +180,8 @@ class Cascade(StackProtocol):
         self.another_checksums = [[]]
         self.index_to_block_id_lists = [[]]
         self.block_id_to_index_lists = [[]]
+        self._block_tables_key = None
+        self._block_tables = None
         self.time_cost = None
         self.setup_time = None
         self.start_time = None
@@ -215,7 +217,7 @@ class Cascade(StackProtocol):
 
         if self.state == 1:
             self.create_checksum_table()
-        
+
         if self.state == 0 and self.role == 1:
             message = CascadeMessage(CascadeMsgType.KEY, self.another.name, key=self.bits[0])
             self.send_by_cc(message)
@@ -284,7 +286,7 @@ class Cascade(StackProtocol):
         elif msg.msg_type is CascadeMsgType.PARAMS:
             """
             Receiver receive k, keylen from sender
-            """ 
+            """
             self.k1 = msg.k
             self.keylen = msg.keylen
             self.frame_num = msg.frame_num
@@ -441,8 +443,35 @@ class Cascade(StackProtocol):
             Will modify `index_to_block_id_lists`, `block_id_to_index_lists`,  and `checksum_tables` attributes.
         """
 
-        # create index_to_block_id
         log.logger.debug(self.name + f' state={self.state} create_checksum_table')
+        index_to_block_id, block_id_to_index = self._get_block_tables()
+        self.index_to_block_id_lists.append(index_to_block_id)
+        self.block_id_to_index_lists.append(block_id_to_index)
+
+        # create checksum_table
+        checksum_table = [[]]
+        for pass_id in range(1, len(index_to_block_id)):
+            block_size = self.k1 * (2**(pass_id - 1))
+            block_num = math.ceil(self.frame_len / block_size)
+            checksum_table.append([0] * block_num)
+            for i in range(self.frame_len):
+                block_id = index_to_block_id[pass_id][i]
+                checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
+        self.checksum_tables.append(checksum_table)
+
+    def _get_block_tables(self) -> tuple[list, list]:
+        """Return the index/block mapping tables, building them on first use.
+
+        The tables depend only on `k1`, `w` and `frame_len`, so every frame shares one read-only copy.
+        Each pass shuffles with its own `default_rng(pass_id)`, so both endpoints derive the same
+        permutation without touching numpy's global RNG.
+        """
+
+        key = (self.k1, self.w, self.frame_len)
+        if self._block_tables_key == key:
+            return self._block_tables
+
+        # create index_to_block_id
         index_to_block_id = [[]]
         for pass_id in range(1, self.w + 1):
             index_to_block_relation = []
@@ -457,14 +486,12 @@ class Cascade(StackProtocol):
                 if block_size / 2 >= self.frame_len:
                     break
 
-                random.seed(pass_id)
                 bit_order = list(range(self.frame_len))
-                random.shuffle(bit_order)
+                random.default_rng(pass_id).shuffle(bit_order)
                 for i in range(self.frame_len):
                     index_to_block_relation.append(int(bit_order[i] / block_size))
 
             index_to_block_id.append(index_to_block_relation)
-        self.index_to_block_id_lists.append(index_to_block_id)
 
         # create block_id_to_index
         block_id_to_index = [[]]
@@ -479,9 +506,8 @@ class Cascade(StackProtocol):
                 for i in range(self.frame_len):
                     block_to_index_relation[int(i / block_size)][i % block_size] = i
             else:
-                random.seed(pass_id)
                 bit_order = list(range(self.frame_len))
-                random.shuffle(bit_order)
+                random.default_rng(pass_id).shuffle(bit_order)
                 for i in range(self.frame_len):
                     bit_pos = bit_order[i]
                     block_to_index_relation[int(bit_pos / block_size)][bit_pos % block_size] = i
@@ -490,19 +516,11 @@ class Cascade(StackProtocol):
                 block_to_index_relation[-1].pop()
 
             block_id_to_index.append(block_to_index_relation)
-        self.block_id_to_index_lists.append(block_id_to_index)
 
-        # create checksum_table
-        checksum_table = [[]]
-        for pass_id in range(1, len(index_to_block_id)):
-            block_size = self.k1 * (2**(pass_id - 1))
-            block_num = math.ceil(self.frame_len / block_size)
-            checksum_table.append([0] * block_num)
-            for i in range(self.frame_len):
-                block_id = index_to_block_id[pass_id][i]
-                checksum_table[pass_id][block_id] ^= ((self.bits[-1] >> i) & 1)
-        self.checksum_tables.append(checksum_table)
-   
+        self._block_tables_key = key
+        self._block_tables = (index_to_block_id, block_id_to_index)
+        return self._block_tables
+
     def check_checksum(self, key_id: int) -> bool:
         """Method to check a checksum.
 
@@ -546,7 +564,7 @@ class Cascade(StackProtocol):
         """Method to end cascade protocol."""
 
         self.state = 2
-    
+
     def interactive_binary_search(self, key_id: int, pass_id: int, block_id: int, start: int, end: int) -> None:
         """Method to search for errors in key.
 
