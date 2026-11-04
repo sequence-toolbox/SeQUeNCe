@@ -56,12 +56,12 @@ class ReservationRuleContext:
     """Inputs needed to build reservation-generated resource-management rules.
 
     Attributes:
-        owner: The quantum router that the reservation applies to.
-        path: The path of node names that the reservation traverses (initiator -> responder)
-        reservation: The reservation object.
-        memory_indices: The list of memory indices at the owner nodes involved in the reservation.
-        index: The current node index in the path for which the rule is being built.
-        priority: The priority for the rule (default is 10).
+        owner (QuantumRouter): The quantum router that the reservation applies to.
+        path (list[str]): The path of node names that the reservation traverses (initiator -> responder)
+        reservation (Reservation): The reservation object.
+        memory_indices (list[int]): The list of memory indices at the owner nodes involved in the reservation.
+        index (int): The current node index in the path for which the rule is being built.
+        priority (int): The priority for the rule (default is 10).
     """
 
     owner: QuantumRouter
@@ -71,7 +71,7 @@ class ReservationRuleContext:
     index: int
     priority: int = 10
 
-
+# Type aliases for reservation rule predicates and builders.
 ReservationRulePredicate = Callable[[ReservationRuleContext], bool]
 ReservationRuleBuilder = Callable[[ReservationRuleContext], Rule]
 
@@ -81,10 +81,10 @@ class ReservationRuleSpec:
     """Static specification for one built-in reservation rule slot.
     
     Attributes:
-        name: The name of the reservation rule.
-        predicate: A function accepting a ReservationRuleContext and returning True if this rule should be created,
-            or False otherwise.
-        builder: A function that builds the rule given a context.
+        name (str): The name of the reservation rule.
+        predicate (ReservationRulePredicate): A function accepting a ReservationRuleContext and returning
+            True if this rule should be created, or False otherwise.
+        builder (ReservationRuleBuilder): A function that builds the rule given a context.
     """
 
     name: str
@@ -249,7 +249,11 @@ DEFAULT_RESERVATION_RULE_SPECS: Final[tuple[ReservationRuleSpec, ...]] = (
 
 
 class ReservationRuleRegistry:
-    """Registry for replacing or disabling existing reservation rule builders."""
+    """Registry for replacing or disabling existing reservation rule builders.
+    
+    Attributes:
+        _builders (dict[str, ReservationRuleBuilder]): Mapping from reservation rule names to their builders.
+    """
 
     def __init__(self, specs: Iterable[ReservationRuleSpec] | None = None) -> None:
         if specs is None:
@@ -314,7 +318,11 @@ class ReservationRuleRegistry:
 
 
 class ReservationRuleGenerator:
-    """Rule generator for reservation-based resource-management rules."""
+    """Rule generator for reservation-based resource-management rules.
+
+    Attributes:
+        registry (ReservationRuleRegistry): Registry of reservation rule builders.
+    """
 
     def __init__(self) -> None:
         self.registry = ReservationRuleRegistry()
@@ -324,16 +332,16 @@ class ReservationRuleGenerator:
         """Create reservation rules in SeQUeNCe's static rule-slot order.
 
         Args:
-            owner: Router whose resource manager will load the generated rules.
-            path: Reservation path from initiator to responder.
-            reservation: Reservation used to generate the rules.
-            memory_indices: Local memory indices assigned to the reservation.
-            index: Position of ``owner`` in ``path``.
-            priority: Base priority for generated reservation rules. The default EG, EP, and ES builders use
-                ``priority``, ``priority + 10``, and ``priority + 20``, respectively.
+            owner (QuantumRouter): Router whose resource manager will load the generated rules.
+            path (list[str]): Reservation path from initiator to responder.
+            reservation (Reservation): Reservation used to generate the rules.
+            memory_indices (list[int]): Local memory indices assigned to the reservation.
+            index (int): Position of ``owner`` in ``path``.
+            priority (int): Base priority for generated reservation rules. The default EG, EP, and ES builders use
+                            ``priority``, ``priority + 10``, and ``priority + 20``, respectively.
 
         Returns:
-            Reservation-generated rules whose static predicates apply at this node.
+            list[Rule]: Reservation-generated rules whose static predicates apply at this node.
         """
         context = ReservationRuleContext(owner, path, reservation, memory_indices, index, priority)
         rules: list[Rule] = []
