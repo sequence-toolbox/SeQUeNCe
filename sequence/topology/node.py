@@ -16,12 +16,12 @@ if TYPE_CHECKING:
     from ..message import Message
     from ..protocol import StackProtocol
     from ..resource_management.memory_manager import MemoryInfo
+    from ..resource_management.reservation_rule_registry import ReservationRuleBuilder
     from ..network_management.reservation import Reservation
     from ..components.optical_channel import QuantumChannel, ClassicalChannel
     from ..components.memory import Memory
     from ..components.photon import Photon
     from ..app.app import App
-    from ..app.request_app import RequestApp
     from ..app.teleport_app import TeleportApp
 
 from ..kernel.entity import Entity, ClassicalEntity
@@ -495,6 +495,25 @@ class QuantumRouter(Node):
         """
         if self.app:
             self.app.get_other_reservation(reservation)
+
+    def disable_rule(self, rule_name: str) -> None:
+        """Disable a specific rule.
+
+        Args:
+            rule_name (str): name of the rule to be disabled.
+        """
+        rule_registry = self.resource_manager.get_reservation_rule_registry()
+        rule_registry.disable(rule_name)
+
+    def replace_rule(self, rule_name: str, builder: ReservationRuleBuilder) -> None:
+        """Replace a specific rule with a custom builder.
+
+        Args:
+            rule_name (str): name of the rule to be replaced.
+            builder (ReservationRuleBuilder): custom rule builder function.
+        """
+        rule_registry = self.resource_manager.get_reservation_rule_registry()
+        rule_registry.replace(rule_name, builder)
 
 
 class QKDNode(Node):
