@@ -38,18 +38,6 @@ def _custom_rule_builder(context: ReservationRuleContext) -> Rule:
     return Rule(context.priority, eg_rule_action_request, lambda *_args: [], {"custom": context.index}, {})
 
 
-def test_registry_can_disable_individual_rule_builder():
-    registry = ReservationRuleRegistry()
-
-    assert registry.get(EP_REQUEST) is not None
-
-    registry.disable(EP_REQUEST)
-
-    assert registry.get(EP_REQUEST) is None
-    assert registry.get(EG_REQUEST) is not None
-    assert registry.get(EP_AWAIT) is not None
-
-
 def test_registry_can_replace_individual_rule_builder():
     registry = ReservationRuleRegistry()
 
@@ -102,6 +90,8 @@ def test_generator_uses_registry_to_disable_rule():
     generator = ReservationRuleGenerator()
     registry = generator.registry
 
+    assert registry.get(EP_AWAIT) is not None
+
     rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
     assert all(isinstance(rule, Rule) for rule in rules)
@@ -109,6 +99,10 @@ def test_generator_uses_registry_to_disable_rule():
     assert any(rule.action is ep_rule_action_await for rule in rules)
 
     registry.disable(EP_AWAIT)
+
+    assert registry.get(EP_AWAIT) is None
+    assert registry.get(EG_REQUEST) is not None
+    assert registry.get(EP_REQUEST) is not None
 
     rules = generator.create_rules(Owner(), ["node1", "node2"], Reservation(), [0], 0)
 
