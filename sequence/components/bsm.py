@@ -145,7 +145,6 @@ class BSM(Entity):
                            (complex(0), complex(sqrt(1 / 2)), complex(sqrt(1 / 2)), complex(0)),
                            (complex(0), complex(sqrt(1 / 2)), -complex(sqrt(1 / 2)), complex(0)))
 
-
     def init(self):
         """Implementation of Entity interface (see base class)."""
 
@@ -197,6 +196,7 @@ class BSM(Entity):
         """Updates parameters of attached detectors."""
         for detector in self.detectors:
             detector.__setattr__(arg_name, value)
+
 
 class PolarizationBSM(BSM):
     """Class modeling a polarization BSM device.
@@ -605,7 +605,6 @@ class AbsorptiveBSM(BSM):
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
-
 
 
 class SingleHeraldedBSM(BSM):
