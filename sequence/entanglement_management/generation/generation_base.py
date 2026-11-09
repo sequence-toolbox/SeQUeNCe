@@ -143,12 +143,10 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
 
         if self.update_memory() and self.primary:
             self.qc_delay = self.owner.qchannels[self.middle].delay
-            frequency = self.memory.frequency
             message = EntanglementGenerationMessage(GenerationMsgType.NEGOTIATE,
                                                     self.remote_protocol_name,
                                                     protocol_type=self.protocol_type,
-                                                    qc_delay=self.qc_delay,
-                                                    frequency=frequency)
+                                                    qc_delay=self.qc_delay)
             self.owner.send_message(self.remote_node_name, message)
 
     def update_memory(self) -> bool | None:
