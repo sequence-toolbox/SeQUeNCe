@@ -47,7 +47,6 @@ from .components import (
     QuantumChannel as QuantumChannel,
     SPDCLens as SPDCLens,
     SPDCSource as SPDCSource,
-    ShellBSM as ShellBSM,
     SingleAtomBSM as SingleAtomBSM,
     SingleHeraldedBSM as SingleHeraldedBSM,
     Switch as Switch,

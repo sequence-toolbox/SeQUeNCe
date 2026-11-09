@@ -150,8 +150,7 @@ class BSM(Entity):
         """Implementation of Entity interface (see base class)."""
 
         # get resolution
-        if not self.encoding == "shell":
-            self.resolution = max(d.time_resolution for d in self.detectors)
+        self.resolution = max(d.time_resolution for d in self.detectors)
 
         self.photons = []
         self.photon_arrival_time = -1
@@ -705,22 +704,3 @@ class SingleHeraldedBSM(BSM):
         res = detector_num
         info = {'entity': 'BSM', 'info_type': 'BSM_res', 'res': res, 'time': time}
         self.notify(info)
-
-class ShellBSM(BSM):
-    def __init__(self, name, timeline):
-        super(BSM, self).__init__(name, timeline)
-        self.encoding = "shell"
-
-    def get(self, photon, **kwargs):
-        """Override of abstract method.
-        This method is intentionally left empty as ShellBSM serves as a placeholder BSM implementation.
-        No action is performed when a photon is received.
-        """
-        pass
-
-    def trigger(self, detector: Detector, info: dict[str, Any]):
-        """Override of abstract method.
-        This method is intentionally left empty as ShellBSM serves as a placeholder BSM implementation.
-        No action is performed when a detector is triggered.
-        """
-        pass
