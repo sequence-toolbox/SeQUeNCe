@@ -3,6 +3,8 @@
 This module defines the Timeline class, which provides an interface for the simulation kernel and drives event execution.
 All entities are required to have an attached timeline for simulation.
 """
+from __future__ import annotations
+
 from _thread import start_new_thread
 from datetime import timedelta
 from sys import stdout
@@ -44,7 +46,7 @@ class Timeline:
 
     Attributes:
         events (EventList): the event list of timeline.
-        entities (list[Entity]): the entity list of timeline used for initialization.
+        entities (dict[str, Entity]): entities keyed by name, used for initialization.
         time (int): current simulation time (picoseconds). The smallest amount of time in the simulation timeline is 1 picosecond
         stop_time (int): the stop (simulation) time of the simulation.
         schedule_counter (int): the counter of scheduled events
@@ -62,7 +64,7 @@ class Timeline:
             manager_kwargs (dict): keyword arguments forwarded to the selected quantum manager.
         """
         self.events: EventList = EventList()
-        self.entities: dict[str, "Entity"] = {}
+        self.entities: dict[str, Entity] = {}
         self.time: int = 0
         self.stop_time: int = stop_time
         self.schedule_counter: int = 0
@@ -82,7 +84,7 @@ class Timeline:
         """Returns current simulation time."""
         return self.time
 
-    def schedule(self, event: "Event") -> None:
+    def schedule(self, event: Event) -> None:
         """Method to schedule an event."""
         if type(event.process.owner) is str:
             event.process.owner = self.get_entity_by_name(event.process.owner)
@@ -135,11 +137,11 @@ class Timeline:
         log.logger.info("Timeline is stopped")
         self.stop_time = self.now()
 
-    def remove_event(self, event: "Event") -> None:
+    def remove_event(self, event: Event) -> None:
         """Remove an event from the event list"""
         self.events.remove(event)
 
-    def update_event_time(self, event: "Event", time: int) -> None:
+    def update_event_time(self, event: Event, time: int) -> None:
         """Method to change execution time of an event.
 
         Args:
@@ -148,7 +150,7 @@ class Timeline:
         """
         self.events.update_event_time(event, time)
 
-    def add_entity(self, entity: "Entity") -> None:
+    def add_entity(self, entity: Entity) -> None:
         assert entity.name not in self.entities, f'{entity.name} already exists!'
         entity.timeline = self
         self.entities[entity.name] = entity
