@@ -168,7 +168,6 @@ def generate_config(g: nx.Graph, cc_delay: float, memory_size: int=5, output_fil
         clinks.append({Topology.SRC: right_name, Topology.DST: bsm_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
         clinks.append({Topology.SRC: bsm_name, Topology.DST: right_name, Topology.DISTANCE: to_bsm_dist, Topology.DELAY: int(cc_delay * MILLISECOND)})
 
-
     output_dict[Topology.ALL_NODE] = nodes + bsm_nodes
 
     output_dict[Topology.ALL_Q_CHANNEL] = qlinks

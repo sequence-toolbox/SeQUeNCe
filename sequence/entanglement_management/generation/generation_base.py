@@ -1,3 +1,7 @@
+"""Base classes and shared circuits for entanglement generation protocols."""
+
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from math import sqrt
 from typing import TYPE_CHECKING, Any
@@ -54,7 +58,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     _registry: dict[str, type['EntanglementGenerationA']] = {}
     _global_type: str = BARRET_KOK
 
-    def __init__(self, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs):
+    def __init__(self, owner: Node, name: str, middle: str, other: str, memory: Memory, **kwargs):
         super().__init__(owner, name, BARRET_KOK)
         self.middle: str = middle
         self.remote_node_name: str = other
@@ -103,7 +107,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return decorator
 
     @classmethod
-    def create(cls, owner: "Node", name: str, middle: str, other: str, memory: "Memory", **kwargs) -> 'EntanglementGenerationA':
+    def create(cls, owner: Node, name: str, middle: str, other: str, memory: Memory, **kwargs) -> 'EntanglementGenerationA':
         protocol_name = cls.get_global_type()
         try:
             protocol_class = cls._registry[protocol_name]
@@ -121,6 +125,13 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         return list(cls._registry.keys())
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
+        """Pair this protocol with the remote protocol instance. Also sets the primary flag based on node names.
+
+        Args:
+            protocol (str): The name of the remote protocol instance.
+            node (str): The name of the remote node.
+            memories (list[str]): The list of memory IDs at the remote node.
+        """
         assert self.remote_protocol_name == '', "Remote protocol name has been set before, cannot set again."
 
         self.remote_protocol_name = protocol
@@ -165,7 +176,7 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
     def is_ready(self) -> bool:
         return self.remote_protocol_name != ''
 
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: Memory) -> None:
         assert memory == self.memory, "Memory to expire does not match the protocol's memory"
         self.record_memory_expired(memory)
         self.update_resource_manager(memory, MemoryInfo.RAW)
@@ -249,5 +260,5 @@ class EntanglementGenerationB(EntanglementProtocol, ABC):
     def is_ready(self) -> bool:
         return True
 
-    def memory_expire(self, memory: "Memory") -> None:
+    def memory_expire(self, memory: Memory) -> None:
         raise Exception(f'EntanglementGenerationB protocol {self.name} should not receive memory expiration;.')
