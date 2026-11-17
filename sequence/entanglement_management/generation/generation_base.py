@@ -39,6 +39,9 @@ class EntanglementGenerationA(EntanglementProtocol, ABC):
         _global_type (str): The globally set protocol type used when creating new instances. Defaults to BARRET_KOK, other options: SINGLE_HERALDED
 
     Instance Attributes:
+        owner (Node): The node that owns this protocol instance.
+        name (str): The name of this protocol instance.
+        rule (Rule): The rule associated with this protocol instance.
         protocol_type (str): The type of the entanglement generation protocol.
         middle (str): The name of the middle BSM node used in the protocol.
         remote_node_name (str): The name of the remote node involved in the protocol.
