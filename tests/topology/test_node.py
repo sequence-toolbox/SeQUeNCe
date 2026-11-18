@@ -1,6 +1,29 @@
 from sequence.components.optical_channel import ClassicalChannel, QuantumChannel
 from sequence.kernel.timeline import Timeline
-from sequence.topology.node import Node, ClassicalNode
+from sequence.resource_management.reservation_rule_registry import EG_REQUEST, EP_REQUEST
+from sequence.topology.node import Node, ClassicalNode, QuantumRouter
+
+
+def test_QuantumRouter_disable_and_replace_rule():
+    router = QuantumRouter("node1", Timeline(), memo_size=1)
+    registry = router.resource_manager.get_reservation_rule_registry()
+    original_builder = registry.get(EP_REQUEST)
+    other_builder = registry.get(EG_REQUEST)
+
+    assert original_builder is not None
+
+    router.disable_rule(EP_REQUEST)
+
+    assert registry.get(EP_REQUEST) is None
+    assert registry.get(EG_REQUEST) is other_builder
+
+    def custom_builder(context):
+        return original_builder(context)
+
+    router.replace_rule(EP_REQUEST, custom_builder)
+
+    assert registry.get(EP_REQUEST) is custom_builder
+    assert registry.get(EG_REQUEST) is other_builder
 
 
 def test_Node_assign_cchannel():
