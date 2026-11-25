@@ -79,6 +79,25 @@ def build_linear(nodes: int, length: float=10.0, attenuation: float=0.0002) -> n
     nx.set_edge_attributes(G, attenuation, name='attenuation')
     return G
 
+def build_lollipop(m: int, n: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
+    """
+    Create an (m, n)-lollipop graph.
+    A lollipop graph joins a complete graph (clique) of m nodes and a path graph of n nodes with a bridge.
+    Args:
+        m: Number of nodes in complete graph (clique).
+        n: Number of nodes in path graph.
+        length: Length of the edges; will be interpreted as km.
+        attenuation: Attenuation of the edges in dB/m.
+
+    Returns: NetworkX Graph
+    """
+    G = nx.lollipop_graph(m, n)
+    for node in G.nodes:
+        G.nodes[node]["node_type"] = "processing"
+    nx.set_edge_attributes(G, length, name='length')
+    nx.set_edge_attributes(G, attenuation, name='attenuation')
+    return G
+
 def build_mesh(size_x: int, size_y: int, length: float=10.0, attenuation: float=0.0002) -> nx.Graph:
     """
     Create a fully connected grid graph.

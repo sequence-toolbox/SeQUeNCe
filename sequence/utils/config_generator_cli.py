@@ -15,6 +15,7 @@ Commands:
     grid: Generate a grid graph topology.
     star: Generate a star graph topology.
     linear: Generate a linear graph topology.
+    lollipop: Generate a lollipop graph topology.
     mesh: Generate a mesh graph topology.
     ring: Generate a ring graph topology.
     waxman: Generate a Waxman graph topology.
@@ -43,6 +44,7 @@ from .graphs import (
     build_grid,
     build_k_n,
     build_linear,
+    build_lollipop,
     build_mesh,
     build_ring,
     build_star,
@@ -193,6 +195,37 @@ def linear(
 ) -> None:
     template = get_template(template_path) if template_path else None
     g = build_linear(nodes, length=length, attenuation=attenuation)
+    generate_config(
+        g,
+        cc_delay=cc_delay,
+        memory_size=memory_size,
+        output_file=output,
+        output_directory=directory,
+        stop_time=stop_time,
+        formalism=formalism,
+        node_template=template,
+        meas_fid=measurement_fidelity,
+        gate_fid=gate_fidelity,
+    )
+
+@app.command()
+def lollipop(
+    m: Annotated[int, typer.Argument(help="Number of nodes in complete graph (clique)")],
+    n: Annotated[int, typer.Argument(help="Number of nodes in path graph")],
+    length: QCLength = 10,
+    attenuation: QCAttenuation = 0.0002,
+    cc_delay: CCDelay = 1,
+    memory_size: MemorySize = 1,
+    output: OutputFile = "output.json",
+    directory: OutputDirectory = "tmp",
+    stop_time: StopTime = None,
+    formalism: Formalism = "bell_diagonal",
+    template_path: Template = "",
+    measurement_fidelity: MeasurementFidelity = 1,
+    gate_fidelity: GateFidelity = 1,
+) -> None:
+    template = get_template(template_path) if template_path else None
+    g = build_lollipop(m, n, length=length, attenuation=attenuation)
     generate_config(
         g,
         cc_delay=cc_delay,
