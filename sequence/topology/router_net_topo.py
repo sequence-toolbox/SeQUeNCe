@@ -1,4 +1,3 @@
-import json
 import numpy as np
 from networkx import Graph, dijkstra_path, exception
 
@@ -51,7 +50,6 @@ class RouterNetTopo(Topo):
         """
         config = super()._load(config_source)
         self._get_templates(config)
-        # quantum connections are only supported by sequential simulation so far
         self._add_qconnections(config)
         self._add_timeline(config)
         self._map_bsm_routers(config)

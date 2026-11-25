@@ -7,7 +7,6 @@ from .bsm import (
     AbsorptiveBSM as AbsorptiveBSM,
     BSM as BSM,
     PolarizationBSM as PolarizationBSM,
-    ShellBSM as ShellBSM,
     SingleAtomBSM as SingleAtomBSM,
     SingleHeraldedBSM as SingleHeraldedBSM,
     TimeBinBSM as TimeBinBSM,
