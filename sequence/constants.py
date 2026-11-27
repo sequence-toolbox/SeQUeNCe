@@ -64,5 +64,7 @@ STABILIZER_FORMALISM: Final = "stabilizer"
 BARRET_KOK: Final = 'barret_kok'
 #: Built-in single-heralded generation protocol identifier.
 SINGLE_HERALDED: Final = 'single_heralded'
+#: Built-in single-heralded-surrogate generation protocol identifier.
+SINGLE_HERALDED_SURROGATE: Final = "single_heralded_surrogate"
 #: Built-in DEJMPS Bell-diagonal-state purification protocol identifier.
 DEJMPS: Final = "dejmps_bds"
