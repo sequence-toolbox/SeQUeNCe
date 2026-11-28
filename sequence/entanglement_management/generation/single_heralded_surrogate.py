@@ -65,8 +65,8 @@ class SurrogateGenerationMessage(Message):
 @EntanglementGenerationA.register(SINGLE_HERALDED_SURROGATE)
 class SingleHeraldedASurrogate(SingleHeraldedA):
     """
-    A surrogate for SingleHeraldedA. It should behave very similarly to the original 
-    SingleHeraldedA protocol performance wise, but will skip a lot of the actual physical operations.
+    A surrogate for SingleHeraldedA. It behaves very similarly to the original 
+    SingleHeraldedA protocol performance wise, but will skip the actual physical operations.
 
     Instance Attributes:
         owner (Node): node that protocol instance is attached to.
@@ -182,13 +182,14 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
             float: The RTT for a single entanglement generation attempt.
         """
         path = self.rule.reservation.path
-        for node in path:
-            if node == self.owner.name:
-                return 2.5
-            elif node == self.remote_node_name:
-                return 2
+        if len(path) != 2:
+            raise ValueError(f"Invalid reservation path={path}")
+        if path[0] == self.owner.name:
+            return 2.5
+        elif path[0] == self.remote_node_name:
+            return 2
         else:
-            raise ValueError("Node not found in the path.")
+            raise ValueError(f"Invalid reservation path={path}, owner={self.owner.name}, remote={self.remote_node_name}")
 
     def set_others(self, protocol: str, node: str, memories: list[str]) -> None:
         """Pair this protocol with the remote protocol instance. Sets the primary flag based on node names.
@@ -241,7 +242,7 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
                     self.surrogates[key] = (time_per_attempt, geom(overall_probability))
                     self.surrogate = self.surrogates[key]
                     log.logger.info(f"Surrogate key: {key}, Overall probability: {overall_probability}, "
-                                       f"Time per attempt: {time_per_attempt}, Expected time: {expected_time}")
+                                    f"Time per attempt: {time_per_attempt}, Expected time: {expected_time}")
 
     @classmethod
     def set_surrogate_parameter_from_timeline(cls, timeline: Timeline) -> None:
@@ -298,8 +299,8 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
                 return
             text = f"{self.owner.name} {self.name} surrogate protocol start with partner {self.remote_protocol_name}"
             log.logger.info(text)
-
             if self.primary:
+                # where the surrogate kicks in
                 time_per_attempt, geom_distribution = self.surrogate
                 number_of_attempts = geom_distribution.rvs()
                 entanglement_total_time = round(time_per_attempt * number_of_attempts)
@@ -313,12 +314,10 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
                 event = Event(entanglement_succeed_time, process)
                 self.owner.timeline.schedule(event)
                 self.scheduled_events.append(event)
-
                 # send message
                 message = SurrogateGenerationMessage(GenerationMsgType.NEGOTIATE, self.remote_protocol_name,
                                                      self.protocol_type, time=entanglement_succeed_time)
                 self.owner.send_message(self.remote_node_name, message)
-
         else:
             super().start()
 
@@ -338,13 +337,12 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
                 event = Event(entanglement_succeed_time, process)
                 self.owner.timeline.schedule(event)
                 self.scheduled_events.append(event)
-                message = SurrogateGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, self.remote_protocol_name,
-                                                    self.protocol_type)
+                message = SurrogateGenerationMessage(GenerationMsgType.NEGOTIATE_ACK, 
+                                                     self.remote_protocol_name, self.protocol_type)
                 self.owner.send_message(src, message)
 
             elif message.msg_type == GenerationMsgType.NEGOTIATE_ACK: # primary receives ACK message from non-primary
                 log.logger.info(f"{self.owner.name} {self.name} received NEGOTIATE_ACK message from {src}")
-                # do nothing
         else:
             super().received_message(src, message)
 
@@ -362,7 +360,6 @@ class SingleHeraldedASurrogate(SingleHeraldedA):
             x_elem, y_elem, z_elem = (error * in_fidelity for error in self.raw_epr_errors)
             state = [self.raw_fidelity, z_elem, x_elem, y_elem]
             quantum_manager.set(keys, state)
-            # decoherence not done yet
         self._entanglement_succeed()
 
 

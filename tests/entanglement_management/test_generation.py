@@ -1,24 +1,34 @@
 import numpy as np
 import pytest
 
-from sequence.constants import BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_VECTOR_FORMALISM, SINGLE_HERALDED
+from sequence.constants import (BARRET_KOK, BELL_DIAGONAL_STATE_FORMALISM, KET_VECTOR_FORMALISM, 
+                                SECOND, SINGLE_HERALDED, SINGLE_HERALDED_SURROGATE)
 from sequence.components.bsm import *
 from sequence.components.memory import MemoryArray
 from sequence.components.optical_channel import *
 from sequence.kernel.timeline import Timeline
 from sequence.kernel.quantum_manager import QuantumManager
 from sequence.entanglement_management.generation import (
-    BarretKokA,
-    BarretKokB,
-    EntanglementGenerationA,
-    EntanglementGenerationB,
+    BarretKokA, BarretKokB,
+    EntanglementGenerationA, EntanglementGenerationB,
     EntanglementGenerationMessage,
     GenerationMsgType,
-    SingleHeraldedA,
-    SingleHeraldedB,
+    SingleHeraldedA, SingleHeraldedB,
+    SingleHeraldedASurrogate,
 )
 
 from sequence.topology.node import Node
+from sequence.utils.miscellaneous import set_type_and_formalism
+
+
+class FakeReservation:
+    def __init__(self, path):
+        self.path = path
+
+
+class FakeRule:
+    def __init__(self, path):
+        self.reservation = FakeReservation(path)
 
 
 class ResourceManager:
@@ -82,9 +92,8 @@ def test_generation_protocol_registry_and_factory_selection():
         router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
         bsm_node = FakeBSMNode("m0", tl)
 
-        protocol_a = EntanglementGenerationA.create(
-            router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
-        )
+        protocol_a = EntanglementGenerationA.create(router, "eg_e0", middle="m0", other="e1", 
+                                                    memory=router.memory_array[0])
         protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
 
         assert isinstance(protocol_a, BarretKokA)
@@ -98,9 +107,8 @@ def test_generation_protocol_registry_and_factory_selection():
         router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
         bsm_node = FakeBSMNode("m0", tl)
 
-        protocol_a = EntanglementGenerationA.create(
-            router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
-        )
+        protocol_a = EntanglementGenerationA.create(router, "eg_e0", middle="m0", other="e1", 
+                                                    memory=router.memory_array[0])
         protocol_b = EntanglementGenerationB.create(bsm_node, "eg_m0", others=["e0", "e1"])
 
         assert isinstance(protocol_a, SingleHeraldedA)
@@ -122,9 +130,7 @@ def test_single_heralded_generation_requires_bell_diagonal_formalism():
         router.memory_array = MemoryArray("e0.memory_array", tl, num_memories=1)
 
         with pytest.raises(AssertionError, match="supports Bell diagonal state formalism"):
-            EntanglementGenerationA.create(
-                router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0]
-            )
+            EntanglementGenerationA.create(router, "eg_e0", middle="m0", other="e1", memory=router.memory_array[0])
     finally:
         EntanglementGenerationA.set_global_type(BARRET_KOK)
         QuantumManager.set_global_manager_formalism(old_formalism)
@@ -135,7 +141,7 @@ def test_generation_receive_message():
     node = Node("e1", tl)
     m0 = FakeBSMNode("m1", tl)
     qc = QuantumChannel("qc_nodem1", tl, 0, 1e3)
-    qc.frequency = 1e12
+    qc.frequency = SECOND
     qc.set_ends(node, m0.name)
     node.memory_array = MemoryArray("memory", tl)
     node.assign_cchannel(ClassicalChannel("cc", tl, 0, delay=1), "m1")
@@ -186,7 +192,7 @@ def test_generation_expire():
         def get(self, qubit):
             pass
 
-    tl = Timeline(1e12)
+    tl = Timeline(SECOND)
     e0 = FakeRouter("e0", tl)
     e1 = FakeRouter("e1", tl)
     m0 = FakeBSMNode("m0", tl)
@@ -226,7 +232,7 @@ def test_generation_expire():
     tl.init()
     tl.run()
 
-    assert e0.memory_array[0].expiration_event.time > 1e12
+    assert e0.memory_array[0].expiration_event.time > SECOND
 
 
 def test_generation_run():
@@ -284,7 +290,7 @@ def test_generation_run():
 
         for protocol in [protocols_e0[i], protocols_e1[i]]:
             process = Process(protocol, "start", [])
-            event = Event(i * 1e12, process)
+            event = Event(i * SECOND, process)
             tl.schedule(event)
 
     tl.run()
@@ -330,8 +336,7 @@ def test_generation_fidelity_ket():
     for n1 in [e0, e1, m0]:
         for n2 in [e0, e1, m0]:
             if n1 != n2:
-                cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3,
-                                      delay=1e9)
+                cc = ClassicalChannel("cc_%s%s" % (n1.name, n2.name), tl, 1e3, delay=1e9)
                 cc.set_ends(n1, n2.name)
 
     # add hardware
@@ -365,10 +370,10 @@ def test_generation_fidelity_ket():
         protocol1.set_others(protocol0.name, e0.name, [e0.memory_array[i].name])
 
         process = Process(protocols_e0[i], "start", [])
-        event = Event(i * 1e12, process)
+        event = Event(i * SECOND, process)
         tl.schedule(event)
         process = Process(protocols_e1[i], "start", [])
-        event = Event(i * 1e12, process)
+        event = Event(i * SECOND, process)
         tl.schedule(event)
 
     tl.init()
@@ -389,3 +394,80 @@ def test_generation_fidelity_ket():
     ratio = correct / total
     assert abs(ratio - FIDELITY) < 0.1
 
+
+def test_single_heralded_surrogate():
+    old_type = EntanglementGenerationA.get_global_type()
+    old_formalism = QuantumManager.get_active_formalism()
+
+    NUM_TESTS = 100
+    FIDELITY = 0.75
+    try:
+        SingleHeraldedASurrogate.surrogates = {}
+        set_type_and_formalism(SINGLE_HERALDED_SURROGATE, BELL_DIAGONAL_STATE_FORMALISM)
+        tl = Timeline()
+        e0 = FakeRouter("e0", tl)
+        m0 = FakeBSMNode("m0", tl)
+        e1 = FakeRouter("e1", tl)
+        e0.set_seed(0)
+        m0.set_seed(1)
+        e1.set_seed(2)
+        # Use the hardware names expected by the surrogate.
+        for node in (e0, e1):
+            qc = QuantumChannel(f"qc-{node.name}-m0", tl, 0, 1e3)
+            qc.set_ends(node, m0.name)
+        for src in (e0, e1, m0):
+            for dst in (e0, e1, m0):
+                if src.name != dst.name:
+                    cc = ClassicalChannel(f"cc-{src.name}-{dst.name}", tl, 1e3, delay=1e9)
+                    cc.set_ends(src, dst.name)
+
+        for node in (e0, e1):
+            node.memory_array = MemoryArray(f"{node.name}.memory_array", tl, efficiency=0.5, 
+                                            fidelity=FIDELITY, num_memories=NUM_TESTS)
+            node.memory_array.owner = node
+        detectors = [{"efficiency": 1, "count_rate": 1e11}] * 2
+        m0.bsm = SingleHeraldedBSM("m0.BSM", tl, detectors=detectors)
+        m0.bsm.owner = m0
+        eg_m0 = EntanglementGenerationB.create(m0, "eg_m0", others=["e0", "e1"])
+        m0.bsm.attach(eg_m0)
+
+        tl.init()
+        # initiate the surrogate
+        SingleHeraldedASurrogate.set_surrogate_parameter_from_timeline(tl)
+
+        for i in range(NUM_TESTS):
+            protocol0 = EntanglementGenerationA.create(e0, f"EGA.{e0.memory_array[i].name}", middle="m0", other="e1",
+                                                       memory=e0.memory_array[i])
+            protocol1 = EntanglementGenerationA.create(e1, f"EGA.{e1.memory_array[i].name}", middle="m0", other="e0", 
+                                                       memory=e1.memory_array[i])
+            for protocol in (protocol0, protocol1):
+                assert isinstance(protocol, SingleHeraldedASurrogate)
+                protocol.rule = FakeRule(["e0", "e1"])
+                protocol.owner.protocols.append(protocol)
+            protocol0.set_others(protocol1.name, e1.name, [e1.memory_array[i].name])
+            protocol1.set_others(protocol0.name, e0.name, [e0.memory_array[i].name])
+            assert protocol1.surrogate_parameter_is_set()
+            assert protocol1.surrogate is not None
+            for protocol in (protocol0, protocol1):
+                process = Process(protocol, "start", [])
+                event = Event(i * SECOND, process)
+                tl.schedule(event)
+
+        tl.run()
+
+        assert len(e0.resource_manager.log) == NUM_TESTS
+        assert len(e1.resource_manager.log) == NUM_TESTS
+        for i in range(NUM_TESTS):
+            for node, remote in ((e0, e1), (e1, e0)):
+                memory, state = node.resource_manager.log[i]
+                assert state == "ENTANGLED"
+                assert memory.fidelity == FIDELITY
+                assert memory.entangled_memory["node_id"] == remote.name
+                assert memory.entangled_memory["memo_id"] == remote.memory_array[i].name
+            memory0, memory1 = e0.memory_array[i], e1.memory_array[i]
+            state0 = tl.quantum_manager.get(memory0.qstate_key)
+            assert state0 is tl.quantum_manager.get(memory1.qstate_key)
+            assert np.allclose(state0.state, [FIDELITY] + [(1 - FIDELITY) / 3] * 3)
+        assert m0.msg_log == []
+    finally:
+        set_type_and_formalism(old_type, old_formalism)
