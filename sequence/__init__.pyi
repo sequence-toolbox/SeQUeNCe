@@ -78,7 +78,10 @@ from .entanglement_management import (
     GenerationMsgType as GenerationMsgType,
     PurificationProtocol as PurificationProtocol,
     SingleHeraldedA as SingleHeraldedA,
+    SingleHeraldedASurrogate as SingleHeraldedASurrogate,
     SingleHeraldedB as SingleHeraldedB,
+    SingleHeraldedBSurrogate as SingleHeraldedBSurrogate,
+    SurrogateGenerationMessage as SurrogateGenerationMessage,
     SwappingMsgType as SwappingMsgType,
     TeleportMessage as TeleportMessage,
     TeleportMsgType as TeleportMsgType,
@@ -161,6 +164,7 @@ from .utils import (
     log as log,
     metrics as metrics,
     nx_converter as nx_converter,
+    set_type_and_formalism as set_type_and_formalism,
 )
 
 __version__: str

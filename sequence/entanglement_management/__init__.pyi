@@ -7,7 +7,10 @@ from .generation import (
     EntanglementGenerationMessage as EntanglementGenerationMessage,
     GenerationMsgType as GenerationMsgType,
     SingleHeraldedA as SingleHeraldedA,
+    SingleHeraldedASurrogate as SingleHeraldedASurrogate,
     SingleHeraldedB as SingleHeraldedB,
+    SingleHeraldedBSurrogate as SingleHeraldedBSurrogate,
+    SurrogateGenerationMessage as SurrogateGenerationMessage,
 )
 from .purification import (
     BBPSSW_BDS as BBPSSW_BDS,
